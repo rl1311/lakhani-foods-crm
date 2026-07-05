@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakhani Foods CRM</title>
+<style>
+  :root{
+    --bg:#f6f4ee; --panel:#ffffff; --ink:#1e2a23; --muted:#6b7a70;
+    --green:#1e5c40; --green-dark:#143f2c; --green-soft:#e4efe8;
+    --amber:#d98324; --amber-soft:#fbeedb;
+    --red:#b03a2e; --red-soft:#f7e2df;
+    --blue:#2b6cb0; --blue-soft:#e2ecf7;
+    --border:#e2ded2; --shadow:0 2px 10px rgba(30,42,35,.07);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);font-size:15px}
+  .sans{font-family:'Segoe UI',system-ui,sans-serif}
+  button,input,select,textarea{font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+  .hidden{display:none!important}
+
+  /* ---------- Lock screen ---------- */
+  #lockScreen{position:fixed;inset:0;background:linear-gradient(160deg,#143f2c 0%,#1e5c40 60%,#2a7350 100%);display:flex;align-items:center;justify-content:center;z-index:100}
+  .lock-card{background:var(--panel);border-radius:16px;padding:42px 46px;width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+  .lock-card h1{font-size:26px;margin-bottom:4px;color:var(--green-dark)}
+  .lock-card .sub{color:var(--muted);margin-bottom:26px;font-style:italic}
+  .lock-card input[type=password]{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+  .lock-err{color:var(--red);font-size:13px;margin-bottom:10px;min-height:16px}
+  .remember-row{display:flex;align-items:center;gap:8px;justify-content:center;margin:6px 0 16px;font-size:13px;color:var(--muted);font-family:'Segoe UI',sans-serif}
+
+  /* ---------- Layout ---------- */
+  #app{display:flex;min-height:100vh}
+  aside{width:225px;background:var(--green-dark);color:#e9f2ec;padding:26px 0;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0}
+  .logo{padding:0 24px 22px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:16px}
+  .logo .name{font-size:19px;font-weight:bold;letter-spacing:.3px}
+  .logo .tag{font-size:11.5px;color:#9fc0ac;font-style:italic;margin-top:3px}
+  .nav-btn{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:none;color:#c6dccd;padding:11px 24px;cursor:pointer;font-size:14.5px;border-left:3px solid transparent}
+  .nav-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-btn.active{background:rgba(255,255,255,.10);color:#fff;border-left-color:var(--amber)}
+  .nav-btn .ico{width:20px;text-align:center}
+  .side-bottom{margin-top:auto;padding:14px 24px 0;border-top:1px solid rgba(255,255,255,.12)}
+  main{flex:1;margin-left:225px;padding:30px 38px 60px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:14px;flex-wrap:wrap}
+  .page-head h2{font-size:24px;color:var(--green-dark)}
+  .page-head .sub{color:var(--muted);font-size:13.5px;margin-top:3px;font-style:italic}
+
+  /* ---------- Components ---------- */
+  .btn{background:var(--green);color:#fff;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn:hover{background:var(--green-dark)}
+  .btn.amber{background:var(--amber)} .btn.amber:hover{background:#b96c1a}
+  .btn.ghost{background:transparent;color:var(--green);border:1px solid var(--green)}
+  .btn.ghost:hover{background:var(--green-soft)}
+  .btn.danger{background:var(--red)} .btn.danger:hover{background:#8e2e24}
+  .btn.small{padding:5px 11px;font-size:12.5px}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  .grid{display:grid;gap:16px}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .kpi .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-family:'Segoe UI',sans-serif}
+  .kpi .val{font-size:26px;font-weight:bold;color:var(--green-dark);margin-top:6px}
+  .kpi .note{font-size:12px;color:var(--muted);margin-top:4px;font-family:'Segoe UI',sans-serif}
+  table{width:100%;border-collapse:collapse;font-family:'Segoe UI',sans-serif;font-size:13.5px}
+  th{text-align:left;padding:9px 12px;color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--border)}
+  td{padding:10px 12px;border-bottom:1px solid #efece3;vertical-align:middle}
+  tr.clickable{cursor:pointer} tr.clickable:hover{background:#faf8f2}
+  .pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;font-family:'Segoe UI',sans-serif}
+  .pill.green{background:var(--green-soft);color:var(--green-dark)}
+  .pill.amber{background:var(--amber-soft);color:#8a5313}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .pill.blue{background:var(--blue-soft);color:var(--blue)}
+  .pill.grey{background:#eceae2;color:#666}
+  .search{padding:9px 13px;border:1px solid var(--border);border-radius:8px;width:250px;background:#fff}
+  .empty{padding:44px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:34px;margin-bottom:10px}
+  a.lnk{color:var(--green);cursor:pointer;text-decoration:underline}
+
+  /* ---------- Pipeline ---------- */
+  .board{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;align-items:start}
+  .col{background:#efece3;border-radius:var(--radius);padding:12px;min-height:340px}
+  .col.drag-over{outline:2px dashed var(--green);outline-offset:-3px;background:var(--green-soft)}
+  .col-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+  .col-head .t{font-weight:bold;font-size:13.5px;color:var(--green-dark);font-family:'Segoe UI',sans-serif}
+  .col-head .n{font-size:12px;color:var(--muted);font-family:'Segoe UI',sans-serif}
+  .col-sum{font-size:11.5px;color:var(--muted);margin-bottom:10px;font-family:'Segoe UI',sans-serif}
+  .deal{background:#fff;border:1px solid var(--border);border-radius:9px;padding:11px 12px;margin-bottom:9px;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,.05);font-family:'Segoe UI',sans-serif}
+  .deal:active{cursor:grabbing}
+  .deal .dn{font-weight:600;font-size:13.5px;margin-bottom:3px}
+  .deal .dc{font-size:12px;color:var(--muted)}
+  .deal .dv{font-size:13px;color:var(--green-dark);font-weight:700;margin-top:6px}
+  .deal .tags{margin-top:6px}
+
+  /* ---------- Modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,35,26,.45);display:flex;align-items:flex-start;justify-content:center;z-index:60;padding:6vh 16px;overflow-y:auto}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:560px;padding:26px 28px;box-shadow:0 24px 70px rgba(0,0,0,.3)}
+  .modal.wide{max-width:720px}
+  .modal h3{color:var(--green-dark);font-size:19px;margin-bottom:16px}
+  .frow{margin-bottom:13px}
+  .frow label{display:block;font-size:12.5px;font-weight:600;color:#4a5a50;margin-bottom:5px;font-family:'Segoe UI',sans-serif}
+  .frow input,.frow select,.frow textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff}
+  .frow textarea{resize:vertical;min-height:70px}
+  .frow .hint{font-size:11.5px;color:var(--muted);margin-top:4px;font-family:'Segoe UI',sans-serif}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+
+  /* ---------- Detail drawer / profile ---------- */
+  .profile-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .avatar{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;font-family:'Segoe UI',sans-serif;flex-shrink:0}
+  .avatar.sq{border-radius:12px;background:var(--amber)}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:7px 14px;font-family:'Segoe UI',sans-serif;font-size:13.5px}
+  .kv .k{color:var(--muted)}
+  .section-title{font-size:15px;color:var(--green-dark);margin:0 0 12px;font-weight:bold}
+  .note-item{border-left:3px solid var(--green-soft);padding:6px 12px;margin-bottom:10px;font-family:'Segoe UI',sans-serif;font-size:13px}
+  .note-item .when{color:var(--muted);font-size:11px}
+
+  /* ---------- Charts ---------- */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:1100px){.chart-grid{grid-template-columns:1fr}.board{grid-template-columns:repeat(2,1fr)}}
+  .chart-title{font-size:13px;font-weight:600;color:#4a5a50;margin-bottom:12px;font-family:'Segoe UI',sans-serif;text-transform:uppercase;letter-spacing:.6px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:'Segoe UI',sans-serif;font-size:12px;color:var(--muted)}
+  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green-dark);color:#fff;padding:11px 22px;border-radius:9px;font-family:'Segoe UI',sans-serif;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s;z-index:200}
+  #toast.show{opacity:1}
+  #toast.err{background:var(--red)}
+  .spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ai-lead-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-bottom:9px;font-family:'Segoe UI',sans-serif}
+  .ai-lead-row input[type=checkbox]{margin-top:4px;width:auto}
+  .banner{background:var(--amber-soft);border:1px solid #edd7b4;color:#7a4d13;border-radius:9px;padding:10px 15px;font-size:12.5px;font-family:'Segoe UI',sans-serif;margin-bottom:15px}
+</style>
+</head>
+<body>
+
+<div id="lockScreen" class="hidden"></div>
+
+<div id="app" class="hidden">
+  <aside>
+    <div class="logo">
+      <div class="name" id="sideCompanyName">Lakhani Foods Ltd</div>
+      <div class="tag">Customer Relationship Manager</div>
+    </div>
+    <button class="nav-btn" data-view="dashboard" onclick="App.go('dashboard')"><span class="ico">&#128200;</span> Analytics</button>
+    <button class="nav-btn" data-view="pipeline"  onclick="App.go('pipeline')"><span class="ico">&#128736;</span> Lead Pipeline</button>
+    <button class="nav-btn" data-view="contacts"  onclick="App.go('contacts')"><span class="ico">&#128100;</span> Contacts</button>
+    <button class="nav-btn" data-view="companies" onclick="App.go('companies')"><span class="ico">&#127970;</span> Companies</button>
+    <button class="nav-btn" data-view="banking"   onclick="App.go('banking')"><span class="ico">&#127974;</span> Banking</button>
+    <button class="nav-btn" data-view="settings"  onclick="App.go('settings')"><span class="ico">&#9881;&#65039;</span> Settings</button>
+    <div class="side-bottom">
+      <button class="nav-btn" onclick="App.lock()" style="padding-left:0"><span class="ico">&#128274;</span> Lock</button>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Lakhani Foods Ltd — CRM
+   Single-file app. All data stored locally in this browser (localStorage).
+   ===================================================================== */
+
+const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
+const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
+const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
+
+/* ---------------- storage ---------------- */
+function freshData(){
+  return {
+    contacts:[], companies:[], deals:[],
+    bank:{connected:false, bankName:'', balance:0, transactions:[]},
+    settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:''}
+  };
+}
+let store = loadStore();
+function loadStore(){
+  try{
+    const raw = localStorage.getItem(DATA_KEY);
+    if(!raw) return freshData();
+    const d = JSON.parse(raw);
+    const f = freshData();
+    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, settings:{...f.settings, ...(d.settings||{})}};
+  }catch(e){ return freshData(); }
+}
+function save(){ localStorage.setItem(DATA_KEY, JSON.stringify(store)); }
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){
+  const c = store.settings.currency || '£';
+  n = Number(n)||0;
+  return c + n.toLocaleString(undefined,{maximumFractionDigits:0});
+}
+function fmtSigned(n){ return (n<0?'-':'+') + fmt(Math.abs(n)); }
+function fdate(iso){ if(!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }
+function monthKey(iso){ const d=new Date(iso); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function monthLabel(key){ const [y,m]=key.split('-'); return new Date(y, m-1, 1).toLocaleDateString(undefined,{month:'short'}); }
+function toast(msg, isErr){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr?' err':'');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>{ t.className=''; }, 3200);
+}
+function initials(name){
+  return (name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+}
+function companyById(id){ return store.companies.find(c=>c.id===id); }
+function contactById(id){ return store.contacts.find(c=>c.id===id); }
+function dealById(id){ return store.deals.find(d=>d.id===id); }
+function contactName(c){ return c ? (c.firstName+' '+(c.lastName||'')).trim() : '—'; }
+
+async function sha256(text){
+  if(window.crypto && crypto.subtle){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  // fallback (non-crypto env): simple hash
+  let h = 0; for(let i=0;i<text.length;i++){ h = Math.imul(31,h) + text.charCodeAt(i) | 0; }
+  return 'fb'+h.toString(16);
+}
+
+/* =====================================================================
+   AUTH
+   ===================================================================== */
+function getAuth(){ try{ return JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){ return null; } }
+function setAuth(a){ localStorage.setItem(AUTH_KEY, JSON.stringify(a)); }
+
+function isUnlocked(){
+  const a = getAuth();
+  if(!a || !a.enabled) return true;
+  if(sessionStorage.getItem(SESSION_KEY)==='1') return true;
+  try{
+    const r = JSON.parse(localStorage.getItem(REMEMBER_KEY)||'null');
+    if(r && r.until > Date.now()) return true;
+  }catch(e){}
+  return false;
+}
+
+function showLock(){
+  const a = getAuth();
+  const el = $('#lockScreen');
+  el.classList.remove('hidden');
+  $('#app').classList.add('hidden');
+  if(a === null){
+    // first run — offer password setup
+    el.innerHTML = `
+      <div class="lock-card">
+        <h1>Lakhani Foods Ltd</h1>
+        <div class="sub">Welcome to your new CRM</div>
+        <p class="sans" style="font-size:13.5px;color:#555;margin-bottom:18px;text-align:left">
+          Would you like to protect this CRM with a password? You can change this any time in Settings.</p>
+        <input type="password" id="setupPw" placeholder="Choose a password (optional)">
+        <input type="password" id="setupPw2" placeholder="Confirm password">
+        <div class="lock-err" id="setupErr"></div>
+        <button class="btn" style="width:100%" onclick="App.setupPassword()">Set password &amp; enter</button>
+        <button class="btn ghost" style="width:100%;margin-top:9px" onclick="App.skipPassword()">Skip — no password</button>
+      </div>`;
+  } else {
+    el.innerHTML = `
+      <div class="lock-card">
+        <h1>Lakhani Foods Ltd</h1>
+        <div class="sub">CRM is locked</div>
+        <input type="password" id="loginPw" placeholder="Password" onkeydown="if(event.key==='Enter')App.tryLogin()">
+        <div class="lock-err" id="loginErr"></div>
+        <label class="remember-row"><input type="checkbox" id="rememberMe" checked style="width:auto"> Remember me on this device for 30 days</label>
+        <button class="btn" style="width:100%" onclick="App.tryLogin()">Unlock</button>
+      </div>`;
+    setTimeout(()=>{ const i=$('#loginPw'); if(i) i.focus(); }, 50);
+  }
+}
+function showApp(){
+  $('#lockScreen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  App.go(App.view || 'dashboard');
+}
+
+/* =====================================================================
+   APP (global controller)
+   ===================================================================== */
+const App = {
+  view:'dashboard',
+
+  /* ---- auth actions ---- */
+  async setupPassword(){
+    const p1 = $('#setupPw').value, p2 = $('#setupPw2').value;
+    if(p1.length < 4){ $('#setupErr').textContent = 'Password must be at least 4 characters.'; return; }
+    if(p1 !== p2){ $('#setupErr').textContent = 'Passwords do not match.'; return; }
+    setAuth({enabled:true, hash: await sha256(p1)});
+    sessionStorage.setItem(SESSION_KEY,'1');
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({until: Date.now()+30*864e5}));
+    showApp(); toast('Password set. Welcome!');
+  },
+  skipPassword(){
+    setAuth({enabled:false, hash:null});
+    showApp(); toast('Welcome to your CRM!');
+  },
+  async tryLogin(){
+    const a = getAuth();
+    const pw = $('#loginPw').value;
+    if(await sha256(pw) === a.hash){
+      sessionStorage.setItem(SESSION_KEY,'1');
+      if($('#rememberMe').checked){
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({until: Date.now()+30*864e5}));
+      }
+      showApp();
+    } else {
+      $('#loginErr').textContent = 'Incorrect password.';
+      $('#loginPw').value=''; $('#loginPw').focus();
+    }
+  },
+  lock(){
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(REMEMBER_KEY);
+    const a = getAuth();
+    if(!a || !a.enabled){ toast('No password set — enable one in Settings to use locking.', true); return; }
+    showLock();
+  },
+
+  /* ---- navigation ---- */
+  go(view, param){
+    this.view = view; this.param = param;
+    document.querySelectorAll('.nav-btn[data-view]').forEach(b=>{
+      b.classList.toggle('active', b.dataset.view === view);
+    });
+    $('#sideCompanyName').textContent = store.settings.companyName || 'Lakhani Foods Ltd';
+    const r = {
+      dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
+      companies: renderCompanies, banking: renderBanking, settings: renderSettings,
+      contact: ()=>renderContactProfile(param), company: ()=>renderCompanyProfile(param),
+      deal: ()=>renderDealProfile(param)
+    }[view] || renderDashboard;
+    $('#main').innerHTML = r();
+    if(view==='pipeline') wireDragDrop();
+  },
+
+  /* ---- modal helpers ---- */
+  closeModal(){ $('#modalRoot').innerHTML=''; },
+  modal(html){
+    $('#modalRoot').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)App.closeModal()">${html}</div>`;
+  },
+
+  /* =============== CONTACTS =============== */
+  openContactForm(id){
+    const c = id ? contactById(id) : null;
+    const compOpts = ['<option value="">— none —</option>'].concat(
+      store.companies.map(co=>`<option value="${co.id}" ${c&&c.companyId===co.id?'selected':''}>${esc(co.name)}</option>`)).join('');
+    this.modal(`
+      <div class="modal">
+        <h3>${c?'Edit contact':'New contact'}</h3>
+        <div class="f2">
+          <div class="frow"><label>First name *</label><input id="cf_first" value="${esc(c?c.firstName:'')}"></div>
+          <div class="frow"><label>Last name</label><input id="cf_last" value="${esc(c?c.lastName:'')}"></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Role / job title</label><input id="cf_role" value="${esc(c?c.role:'')}"></div>
+          <div class="frow"><label>Company</label><select id="cf_company">${compOpts}</select></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Email</label><input id="cf_email" value="${esc(c?c.email:'')}"></div>
+          <div class="frow"><label>Phone</label><input id="cf_phone" value="${esc(c?c.phone:'')}"></div>
+        </div>
+        <div class="frow"><label>Notes</label><textarea id="cf_notes">${esc(c?c.notes:'')}</textarea></div>
+        <div class="modal-actions">
+          ${c?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteContact(\''+c.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveContact('${c?c.id:''}')">Save contact</button>
+        </div>
+      </div>`);
+  },
+  saveContact(id){
+    const first = $('#cf_first').value.trim();
+    if(!first){ toast('First name is required.', true); return; }
+    const data = {
+      firstName:first, lastName:$('#cf_last').value.trim(), role:$('#cf_role').value.trim(),
+      companyId:$('#cf_company').value||null, email:$('#cf_email').value.trim(),
+      phone:$('#cf_phone').value.trim(), notes:$('#cf_notes').value.trim()
+    };
+    if(id){ Object.assign(contactById(id), data); toast('Contact updated.'); }
+    else { store.contacts.push({id:uid(), createdAt:new Date().toISOString(), ...data}); toast('Contact added.'); }
+    save(); this.closeModal(); this.go(this.view, this.param);
+  },
+  deleteContact(id){
+    if(!confirm('Delete this contact? Deals referencing them will keep running without a contact.')) return;
+    store.contacts = store.contacts.filter(c=>c.id!==id);
+    store.deals.forEach(d=>{ if(d.contactId===id) d.contactId=null; });
+    save(); this.closeModal(); this.go('contacts'); toast('Contact deleted.');
+  },
+
+  /* =============== COMPANIES =============== */
+  openCompanyForm(id){
+    const c = id ? companyById(id) : null;
+    this.modal(`
+      <div class="modal">
+        <h3>${c?'Edit company':'New company'}</h3>
+        <div class="frow"><label>Company name *</label><input id="co_name" value="${esc(c?c.name:'')}"></div>
+        <div class="f2">
+          <div class="frow"><label>Industry / segment</label><input id="co_ind" placeholder="e.g. Grocery retail, Food service" value="${esc(c?c.industry:'')}"></div>
+          <div class="frow"><label>Location</label><input id="co_loc" value="${esc(c?c.location:'')}"></div>
+        </div>
+        <div class="frow"><label>Website</label><input id="co_web" value="${esc(c?c.website:'')}"></div>
+        <div class="frow"><label>Notes</label><textarea id="co_notes">${esc(c?c.notes:'')}</textarea></div>
+        <div class="modal-actions">
+          ${c?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteCompany(\''+c.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveCompany('${c?c.id:''}')">Save company</button>
+        </div>
+      </div>`);
+  },
+  saveCompany(id){
+    const name = $('#co_name').value.trim();
+    if(!name){ toast('Company name is required.', true); return; }
+    const data = { name, industry:$('#co_ind').value.trim(), location:$('#co_loc').value.trim(),
+      website:$('#co_web').value.trim(), notes:$('#co_notes').value.trim() };
+    if(id){ Object.assign(companyById(id), data); toast('Company updated.'); }
+    else { store.companies.push({id:uid(), createdAt:new Date().toISOString(), ...data}); toast('Company added.'); }
+    save(); this.closeModal(); this.go(this.view, this.param);
+  },
+  deleteCompany(id){
+    if(!confirm('Delete this company? Its contacts and deals will be unlinked, not deleted.')) return;
+    store.companies = store.companies.filter(c=>c.id!==id);
+    store.contacts.forEach(c=>{ if(c.companyId===id) c.companyId=null; });
+    store.deals.forEach(d=>{ if(d.companyId===id) d.companyId=null; });
+    save(); this.closeModal(); this.go('companies'); toast('Company deleted.');
+  },
+
+  /* =============== DEALS / PIPELINE =============== */
+  openDealForm(id, presetStage){
+    const d = id ? dealById(id) : null;
+    const compOpts = ['<option value="">— none —</option>'].concat(
+      store.companies.map(co=>`<option value="${co.id}" ${d&&d.companyId===co.id?'selected':''}>${esc(co.name)}</option>`)).join('');
+    const conOpts = ['<option value="">— none —</option>'].concat(
+      store.contacts.map(c=>`<option value="${c.id}" ${d&&d.contactId===c.id?'selected':''}>${esc(contactName(c))}</option>`)).join('');
+    const stageOpts = STAGES.map(s=>`<option ${ (d?d.stage:(presetStage||STAGES[0]))===s?'selected':''}>${s}</option>`).join('');
+    this.modal(`
+      <div class="modal">
+        <h3>${d?'Edit lead / deal':'New lead'}</h3>
+        <div class="frow"><label>Deal name *</label><input id="df_name" placeholder="e.g. Wholesale supply — spices range" value="${esc(d?d.name:'')}"></div>
+        <div class="f2">
+          <div class="frow"><label>Company</label><select id="df_company">${compOpts}</select></div>
+          <div class="frow"><label>Primary contact</label><select id="df_contact">${conOpts}</select></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Deal value (${esc(store.settings.currency)})</label><input id="df_value" type="number" min="0" value="${d?d.value:''}"></div>
+          <div class="frow"><label>Stage</label><select id="df_stage">${stageOpts}</select></div>
+        </div>
+        <div class="frow"><label>Next step</label><input id="df_next" placeholder="e.g. Send sample box by Friday" value="${esc(d?d.nextStep:'')}"></div>
+        <div class="modal-actions">
+          ${d?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteDeal(\''+d.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveDeal('${d?d.id:''}')">Save lead</button>
+        </div>
+      </div>`);
+  },
+  saveDeal(id){
+    const name = $('#df_name').value.trim();
+    if(!name){ toast('Deal name is required.', true); return; }
+    const stage = $('#df_stage').value;
+    const data = {
+      name, companyId:$('#df_company').value||null, contactId:$('#df_contact').value||null,
+      value:Number($('#df_value').value)||0, stage, nextStep:$('#df_next').value.trim()
+    };
+    if(id){
+      const d = dealById(id);
+      const wasWon = d.status==='won';
+      Object.assign(d, data);
+      d.status = (stage==='Closed Won') ? 'won' : (d.status==='lost' ? 'lost' : 'open');
+      if(d.status==='won' && !wasWon) d.closedAt = new Date().toISOString();
+      toast('Lead updated.');
+    } else {
+      store.deals.push({id:uid(), createdAt:new Date().toISOString(), status: stage==='Closed Won'?'won':'open',
+        closedAt: stage==='Closed Won'?new Date().toISOString():null, source:'manual', notes:[], ...data});
+      toast('Lead added to pipeline.');
+    }
+    save(); this.closeModal(); this.go(this.view, this.param);
+  },
+  deleteDeal(id){
+    if(!confirm('Delete this lead permanently?')) return;
+    store.deals = store.deals.filter(d=>d.id!==id);
+    save(); this.closeModal(); this.go('pipeline'); toast('Lead deleted.');
+  },
+  moveDeal(id, stage){
+    const d = dealById(id); if(!d) return;
+    d.stage = stage;
+    if(stage === 'Closed Won'){
+      if(d.status!=='won'){ d.status='won'; d.closedAt = new Date().toISOString(); toast('Deal won! 🎉 ' + fmt(d.value)); }
+    } else {
+      if(d.status==='won'){ d.status='open'; d.closedAt=null; }
+    }
+    save(); this.go('pipeline');
+  },
+  markLost(id){
+    const d = dealById(id); if(!d) return;
+    if(!confirm('Mark "'+d.name+'" as lost?')) return;
+    d.status='lost'; d.closedAt=new Date().toISOString();
+    save(); this.closeModal(); this.go(this.view==='deal'?'pipeline':this.view, this.param); toast('Marked as lost.');
+  },
+  reopenDeal(id){
+    const d = dealById(id); if(!d) return;
+    d.status='open'; d.closedAt=null; if(d.stage==='Closed Won') d.stage='Negotiation';
+    save(); this.go('deal', id); toast('Lead reopened.');
+  },
+  addDealNote(id){
+    const input = $('#dn_text'); const txt = input.value.trim();
+    if(!txt) return;
+    const d = dealById(id);
+    d.notes = d.notes || [];
+    d.notes.unshift({at:new Date().toISOString(), text:txt});
+    save(); this.go('deal', id);
+  },
+
+  /* =============== BANKING =============== */
+  openBankLink(){
+    this.modal(`
+      <div class="modal">
+        <h3>Link bank account</h3>
+        <div class="banner">This CRM stores bank data locally in your browser only — nothing is sent anywhere.
+        Enter your balance manually and (optionally) import transactions from a CSV export from your online banking.</div>
+        <div class="f2">
+          <div class="frow"><label>Bank name</label><input id="bk_name" placeholder="e.g. Barclays Business"></div>
+          <div class="frow"><label>Current balance (${esc(store.settings.currency)})</label><input id="bk_bal" type="number" step="0.01"></div>
+        </div>
+        <div class="frow">
+          <label>Import transactions CSV (optional)</label>
+          <input type="file" id="bk_csv" accept=".csv,text/csv">
+          <div class="hint">Expected columns: date, description, amount — e.g. <code>2026-06-28, Tesco PLC invoice 1042, 5400</code>. Negative amounts are money out.</div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.linkBank()">Link account</button>
+        </div>
+      </div>`);
+  },
+  async linkBank(){
+    const name = $('#bk_name').value.trim() || 'My bank';
+    const bal = Number($('#bk_bal').value);
+    if(isNaN(bal)){ toast('Please enter your current balance.', true); return; }
+    let txns = [];
+    const f = $('#bk_csv').files[0];
+    if(f){ txns = parseCsvTransactions(await f.text()); }
+    store.bank = {connected:true, bankName:name, balance:bal, transactions:txns};
+    save(); this.closeModal(); this.go('banking');
+    toast('Bank account linked' + (txns.length? ' — '+txns.length+' transactions imported.':'.'));
+  },
+  async importMoreCsv(){
+    const f = $('#bk_more_csv').files[0];
+    if(!f){ toast('Choose a CSV file first.', true); return; }
+    const txns = parseCsvTransactions(await f.text());
+    store.bank.transactions = store.bank.transactions.concat(txns)
+      .sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+    save(); this.go('banking'); toast(txns.length + ' transactions imported.');
+  },
+  updateBalance(){
+    const v = Number($('#bk_newbal').value);
+    if(isNaN(v)){ toast('Enter a valid number.', true); return; }
+    store.bank.balance = v; save(); this.go('banking'); toast('Balance updated.');
+  },
+  unlinkBank(){
+    if(!confirm('Unlink bank account and remove imported transactions?')) return;
+    store.bank = freshData().bank; save(); this.go('banking'); toast('Bank account unlinked.');
+  },
+
+  /* =============== CLAUDE LEAD GENERATION =============== */
+  openLeadGen(){
+    const hasKey = !!store.settings.apiKey;
+    this.modal(`
+      <div class="modal wide">
+        <h3>&#10024; Generate leads with Claude</h3>
+        <div class="banner">Claude will suggest realistic prospect profiles for Lakhani Foods Ltd based on the client base you describe.
+        Treat them as <b>research starting points</b> — verify companies and contact details before reaching out.</div>
+        ${hasKey ? '' : `
+        <div class="frow">
+          <label>Anthropic API key (stored locally in this browser only)</label>
+          <input type="password" id="lg_key" placeholder="sk-ant-...">
+          <div class="hint">Get one at console.anthropic.com &rarr; API keys. You can also set it later in Settings.</div>
+        </div>`}
+        <div class="frow">
+          <label>Describe the client base you're looking for *</label>
+          <textarea id="lg_desc" placeholder="e.g. Independent grocery chains and South Asian food wholesalers in the Midlands who would stock our spice blends, rice and frozen ranges. Mid-size — 5 to 50 stores."></textarea>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Region / market</label><input id="lg_region" placeholder="e.g. UK — Midlands & North West" value="United Kingdom"></div>
+          <div class="frow"><label>Number of leads</label>
+            <select id="lg_count"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></div>
+        </div>
+        <div class="frow"><label>Typical deal value (${esc(store.settings.currency)}, used as an estimate)</label>
+          <input id="lg_value" type="number" value="10000"></div>
+        <div id="lg_results"></div>
+        <div class="modal-actions">
+          <button class="btn ghost" onclick="App.closeModal()">Close</button>
+          <button class="btn amber" id="lg_go" onclick="App.generateLeads()">Generate leads</button>
+        </div>
+      </div>`);
+  },
+
+  async generateLeads(){
+    const desc = $('#lg_desc').value.trim();
+    if(!desc){ toast('Describe your target client base first.', true); return; }
+    const keyInput = $('#lg_key');
+    if(keyInput && keyInput.value.trim()){ store.settings.apiKey = keyInput.value.trim(); save(); }
+    if(!store.settings.apiKey){ toast('An Anthropic API key is needed to ask Claude.', true); return; }
+
+    const region = $('#lg_region').value.trim() || 'United Kingdom';
+    const count = Number($('#lg_count').value)||5;
+    const typical = Number($('#lg_value').value)||10000;
+    const btn = $('#lg_go');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Asking Claude…';
+    $('#lg_results').innerHTML = '';
+
+    const schema = {
+      type:'object',
+      properties:{
+        leads:{ type:'array', items:{
+          type:'object',
+          properties:{
+            companyName:{type:'string'},
+            industry:{type:'string'},
+            location:{type:'string'},
+            contactName:{type:'string', description:'A plausible full name for the likely buyer persona'},
+            contactRole:{type:'string', description:'Job title of the likely buyer, e.g. Head of Procurement'},
+            estimatedValue:{type:'number', description:'Estimated first-deal value'},
+            rationale:{type:'string', description:'One sentence on why this prospect fits'}
+          },
+          required:['companyName','industry','location','contactName','contactRole','estimatedValue','rationale'],
+          additionalProperties:false
+        }}
+      },
+      required:['leads'], additionalProperties:false
+    };
+
+    const prompt =
+`You are a B2B sales researcher for ${store.settings.companyName||'Lakhani Foods Ltd'}, a food products company.
+
+Suggest exactly ${count} realistic prospect leads matching this ideal client profile:
+"${desc}"
+
+Region / market: ${region}
+Typical first-deal value: around ${store.settings.currency}${typical} (vary it plausibly per lead, from roughly half to double).
+
+For each lead give: a realistic company profile of the kind that exists in this market (a plausible company name and location — these are illustrative prospect archetypes for the user to research and verify), the likely buyer persona (a plausible contact name and job title), an estimated first-deal value as a plain number, and a one-sentence rationale for the fit.`;
+
+    try{
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key': store.settings.apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body: JSON.stringify({
+          model:'claude-opus-4-8',
+          max_tokens:8000,
+          output_config:{format:{type:'json_schema', schema}},
+          messages:[{role:'user', content:prompt}]
+        })
+      });
+      const body = await res.json();
+      if(!res.ok){
+        const msg = (body && body.error && body.error.message) || ('HTTP '+res.status);
+        throw new Error(msg);
+      }
+      if(body.stop_reason === 'refusal'){ throw new Error('Claude declined this request. Try rewording your description.'); }
+      const textBlock = (body.content||[]).find(b=>b.type==='text');
+      const parsed = JSON.parse(textBlock.text);
+      this._aiLeads = parsed.leads || [];
+      this.renderAiResults();
+    }catch(err){
+      $('#lg_results').innerHTML = `<div class="banner" style="background:var(--red-soft);border-color:#e6b8b2;color:var(--red)">
+        <b>Couldn't generate leads:</b> ${esc(err.message)}</div>`;
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate leads';
+    }
+  },
+
+  renderAiResults(){
+    const leads = this._aiLeads || [];
+    if(!leads.length){ $('#lg_results').innerHTML = '<div class="banner">Claude returned no leads — try a more specific description.</div>'; return; }
+    $('#lg_results').innerHTML = `
+      <div style="margin:14px 0 8px;font-weight:600;font-family:'Segoe UI',sans-serif;font-size:13.5px">
+        Claude suggested ${leads.length} lead${leads.length>1?'s':''} — untick any you don't want:</div>
+      ${leads.map((l,i)=>`
+        <div class="ai-lead-row">
+          <input type="checkbox" id="ai_${i}" checked>
+          <div>
+            <div style="font-weight:600">${esc(l.companyName)} <span class="pill grey">${esc(l.location)}</span></div>
+            <div style="font-size:12.5px;color:var(--muted)">${esc(l.contactName)} — ${esc(l.contactRole)} · ${esc(l.industry)} · est. ${fmt(l.estimatedValue)}</div>
+            <div style="font-size:12.5px;margin-top:3px">${esc(l.rationale)}</div>
+          </div>
+        </div>`).join('')}
+      <button class="btn" style="margin-top:8px" onclick="App.acceptAiLeads()">Add selected to pipeline</button>`;
+  },
+
+  acceptAiLeads(){
+    const leads = this._aiLeads || [];
+    let added = 0;
+    leads.forEach((l,i)=>{
+      const cb = $('#ai_'+i);
+      if(!cb || !cb.checked) return;
+      // company (reuse if same name exists)
+      let comp = store.companies.find(c=>c.name.toLowerCase()===l.companyName.toLowerCase());
+      if(!comp){
+        comp = {id:uid(), createdAt:new Date().toISOString(), name:l.companyName, industry:l.industry||'',
+          location:l.location||'', website:'', notes:'Suggested by Claude — verify before outreach.'};
+        store.companies.push(comp);
+      }
+      const nameParts = (l.contactName||'').split(/\s+/);
+      const contact = {id:uid(), createdAt:new Date().toISOString(), firstName:nameParts[0]||'Contact',
+        lastName:nameParts.slice(1).join(' '), role:l.contactRole||'', companyId:comp.id, email:'', phone:'',
+        notes:'AI-suggested buyer persona — verify the real contact at this company.'};
+      store.contacts.push(contact);
+      store.deals.push({id:uid(), createdAt:new Date().toISOString(), name:'New business — '+l.companyName,
+        companyId:comp.id, contactId:contact.id, value:Number(l.estimatedValue)||0, stage:'New Lead',
+        status:'open', closedAt:null, source:'claude', nextStep:'Research & verify this prospect', notes:[
+          {at:new Date().toISOString(), text:'AI rationale: '+(l.rationale||'')}
+        ]});
+      added++;
+    });
+    save(); this.closeModal(); this.go('pipeline');
+    toast(added + ' AI-suggested lead'+(added===1?'':'s')+' added to the pipeline.');
+  },
+
+  /* =============== SETTINGS =============== */
+  saveSettings(){
+    store.settings.companyName = $('#st_name').value.trim() || 'Lakhani Foods Ltd';
+    store.settings.currency = $('#st_curr').value;
+    save(); this.go('settings'); toast('Settings saved.');
+  },
+  saveApiKey(){
+    store.settings.apiKey = $('#st_key').value.trim();
+    save(); toast(store.settings.apiKey ? 'API key saved locally.' : 'API key cleared.');
+  },
+  async changePassword(){
+    const p1 = $('#st_pw1').value, p2 = $('#st_pw2').value;
+    if(p1.length<4){ toast('Password must be at least 4 characters.', true); return; }
+    if(p1!==p2){ toast('Passwords do not match.', true); return; }
+    setAuth({enabled:true, hash: await sha256(p1)});
+    sessionStorage.setItem(SESSION_KEY,'1');
+    this.go('settings'); toast('Password '+(getAuth()&&getAuth().enabled?'updated':'set')+'.');
+  },
+  disablePassword(){
+    if(!confirm('Remove password protection?')) return;
+    setAuth({enabled:false, hash:null});
+    localStorage.removeItem(REMEMBER_KEY);
+    this.go('settings'); toast('Password protection disabled.');
+  },
+  forgetDevice(){
+    localStorage.removeItem(REMEMBER_KEY);
+    toast('This device will ask for the password next time.');
+  },
+  exportData(){
+    const blob = new Blob([JSON.stringify(store, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'lakhani-foods-crm-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+  async importData(){
+    const f = $('#st_import').files[0];
+    if(!f){ toast('Choose a backup file first.', true); return; }
+    try{
+      const d = JSON.parse(await f.text());
+      if(!d.deals || !d.contacts) throw new Error('bad file');
+      if(!confirm('Replace all current CRM data with this backup?')) return;
+      store = {...freshData(), ...d};
+      save(); this.go('dashboard'); toast('Backup restored.');
+    }catch(e){ toast('That file is not a valid CRM backup.', true); }
+  },
+  clearAll(){
+    if(!confirm('Delete ALL CRM data (contacts, companies, leads, bank data)? This cannot be undone.')) return;
+    if(!confirm('Are you absolutely sure?')) return;
+    store = freshData(); save(); this.go('dashboard'); toast('All data cleared.');
+  }
+};
+
+/* =====================================================================
+   VIEWS
+   ===================================================================== */
+
+function statPack(){
+  const open = store.deals.filter(d=>d.status==='open');
+  const won  = store.deals.filter(d=>d.status==='won');
+  const lost = store.deals.filter(d=>d.status==='lost');
+  const pipelineValue = open.reduce((s,d)=>s+d.value,0);
+  const weighted = open.reduce((s,d)=>s+d.value*(STAGE_PROB[d.stage]||0.1),0);
+  const wonValue = won.reduce((s,d)=>s+d.value,0);
+  const winRate = (won.length+lost.length) ? Math.round(100*won.length/(won.length+lost.length)) : null;
+  return {open, won, lost, pipelineValue, weighted, wonValue, winRate};
+}
+
+/* ---------------- Dashboard / Analytics ---------------- */
+function renderDashboard(){
+  const s = statPack();
+  const nowKey = monthKey(new Date().toISOString());
+  const newThisMonth = store.deals.filter(d=>monthKey(d.createdAt)===nowKey).length;
+
+  // leads created per month, last 6 months
+  const months = [];
+  const dt = new Date(); dt.setDate(1);
+  for(let i=5;i>=0;i--){
+    const d2 = new Date(dt.getFullYear(), dt.getMonth()-i, 1);
+    months.push(monthKey(d2.toISOString()));
+  }
+  const leadsSeries = months.map(k=>({label:monthLabel(k), value: store.deals.filter(d=>monthKey(d.createdAt)===k).length}));
+  const wonSeries   = months.map(k=>({label:monthLabel(k), value: store.deals.filter(d=>d.status==='won'&&d.closedAt&&monthKey(d.closedAt)===k).reduce((x,d)=>x+d.value,0)}));
+
+  const funnel = STAGES.map(st=>({label:st.replace('Closed Won','Won'), value: store.deals.filter(d=> d.stage===st && (st==='Closed Won'? d.status==='won' : d.status==='open')).length }));
+
+  const byCompany = {};
+  store.deals.filter(d=>d.status!=='lost').forEach(d=>{
+    const nm = d.companyId ? (companyById(d.companyId)||{}).name : null;
+    if(!nm) return;
+    byCompany[nm] = (byCompany[nm]||0)+d.value;
+  });
+  const topCompanies = Object.entries(byCompany).sort((a,b)=>b[1]-a[1]).slice(0,5)
+    .map(([label,value])=>({label,value}));
+
+  const bank = store.bank;
+  const projected = bank.connected ? bank.balance + s.weighted : null;
+
+  const noData = store.deals.length===0;
+
+  return `
+  <div class="page-head">
+    <div><h2>Business analytics</h2>
+    <div class="sub">A high-level view across ${esc(store.settings.companyName)} — pipeline, wins and cash.</div></div>
+    <button class="btn amber" onclick="App.openLeadGen()">&#10024; Ask Claude to generate leads</button>
+  </div>
+
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Open pipeline value</div><div class="val">${fmt(s.pipelineValue)}</div><div class="note">${s.open.length} open lead${s.open.length===1?'':'s'}</div></div>
+    <div class="card kpi"><div class="lbl">Weighted forecast</div><div class="val">${fmt(s.weighted)}</div><div class="note">value × stage probability</div></div>
+    <div class="card kpi"><div class="lbl">Revenue won</div><div class="val">${fmt(s.wonValue)}</div><div class="note">${s.won.length} deal${s.won.length===1?'':'s'} closed won</div></div>
+    <div class="card kpi"><div class="lbl">Win rate</div><div class="val">${s.winRate===null?'—':s.winRate+'%'}</div><div class="note">${s.won.length} won / ${s.lost.length} lost</div></div>
+    <div class="card kpi"><div class="lbl">New leads this month</div><div class="val">${newThisMonth}</div><div class="note">created in ${monthLabel(nowKey)}</div></div>
+    ${bank.connected ? `<div class="card kpi"><div class="lbl">Cash + weighted pipeline</div><div class="val">${fmt(projected)}</div><div class="note">bank ${fmt(bank.balance)} + forecast</div></div>`
+      : `<div class="card kpi"><div class="lbl">Bank position</div><div class="val" style="font-size:16px;color:var(--muted)">Not linked</div><div class="note"><a class="lnk" onclick="App.go('banking')">Link your bank</a> to see deal impact</div></div>`}
+  </div>
+
+  ${noData ? `<div class="card empty">
+      <div class="big">&#127793;</div>
+      <p><b>Your CRM is ready — the pipeline is empty.</b></p>
+      <p style="margin-top:6px">Add your first lead, or let Claude suggest prospects that fit your client base.</p>
+      <div style="margin-top:16px;display:flex;gap:10px;justify-content:center">
+        <button class="btn" onclick="App.openDealForm()">+ Add a lead</button>
+        <button class="btn amber" onclick="App.openLeadGen()">&#10024; Ask Claude</button>
+      </div>
+    </div>` : `
+  <div class="chart-grid">
+    <div class="card"><div class="chart-title">Leads by pipeline stage</div>${svgBars(funnel, '#1e5c40')}</div>
+    <div class="card"><div class="chart-title">Deal outcomes</div>${svgDonut([
+        {label:'Open', value:s.open.length, color:'#2b6cb0'},
+        {label:'Won', value:s.won.length, color:'#1e5c40'},
+        {label:'Lost', value:s.lost.length, color:'#b03a2e'}])}</div>
+    <div class="card"><div class="chart-title">New leads per month</div>${svgLine(leadsSeries, '#d98324')}</div>
+    <div class="card"><div class="chart-title">Revenue won per month</div>${svgBars(wonSeries, '#d98324', true)}</div>
+    ${topCompanies.length? `<div class="card" style="grid-column:1/-1"><div class="chart-title">Top companies by deal value (open + won)</div>${svgHBars(topCompanies)}</div>`:''}
+  </div>`}
+  `;
+}
+
+/* ---------------- Pipeline ---------------- */
+function renderPipeline(){
+  const cols = STAGES.map(stage=>{
+    const deals = store.deals.filter(d=>{
+      if(d.status==='lost') return false;
+      if(stage==='Closed Won') return d.stage==='Closed Won' && d.status==='won';
+      return d.stage===stage && d.status==='open';
+    });
+    const total = deals.reduce((s,d)=>s+d.value,0);
+    return `
+    <div class="col" data-stage="${esc(stage)}">
+      <div class="col-head"><span class="t">${esc(stage)}</span><span class="n">${deals.length}</span></div>
+      <div class="col-sum">${fmt(total)} · ${Math.round((STAGE_PROB[stage]||0)*100)}% likely</div>
+      ${deals.map(d=>{
+        const comp = d.companyId ? companyById(d.companyId) : null;
+        return `<div class="deal" draggable="true" data-id="${d.id}" onclick="App.go('deal','${d.id}')">
+          <div class="dn">${esc(d.name)}</div>
+          <div class="dc">${comp?esc(comp.name):'No company'}</div>
+          <div class="dv">${fmt(d.value)}</div>
+          <div class="tags">${d.source==='claude'?'<span class="pill amber">AI suggested</span> ':''}${d.status==='won'?'<span class="pill green">Won</span>':''}</div>
+        </div>`;
+      }).join('') || '<div style="color:#a9a48f;font-size:12.5px;font-family:sans-serif;padding:8px 2px">Drop leads here</div>'}
+    </div>`;
+  }).join('');
+
+  const lost = store.deals.filter(d=>d.status==='lost');
+
+  return `
+  <div class="page-head">
+    <div><h2>Lead pipeline</h2>
+    <div class="sub">Drag leads between stages. Dropping into <b>Closed Won</b> marks the deal as won.</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn amber" onclick="App.openLeadGen()">&#10024; Ask Claude to generate leads</button>
+      <button class="btn" onclick="App.openDealForm()">+ New lead</button>
+    </div>
+  </div>
+  <div class="board">${cols}</div>
+  ${lost.length? `<div class="card" style="margin-top:18px">
+    <div class="chart-title">Lost deals (${lost.length})</div>
+    <table><thead><tr><th>Deal</th><th>Company</th><th>Value</th><th>Lost on</th><th></th></tr></thead><tbody>
+    ${lost.map(d=>`<tr class="clickable" onclick="App.go('deal','${d.id}')">
+      <td>${esc(d.name)}</td><td>${d.companyId?esc((companyById(d.companyId)||{}).name||'—'):'—'}</td>
+      <td>${fmt(d.value)}</td><td>${fdate(d.closedAt)}</td>
+      <td><button class="btn small ghost" onclick="event.stopPropagation();App.reopenDeal('${d.id}')">Reopen</button></td></tr>`).join('')}
+    </tbody></table></div>`:''}
+  `;
+}
+
+function wireDragDrop(){
+  document.querySelectorAll('.deal[draggable]').forEach(el=>{
+    el.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', el.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+  document.querySelectorAll('.col').forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', ()=> col.classList.remove('drag-over'));
+    col.addEventListener('drop', e=>{
+      e.preventDefault(); col.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      if(id) App.moveDeal(id, col.dataset.stage);
+    });
+  });
+}
+
+/* ---------------- Deal profile ---------------- */
+function renderDealProfile(id){
+  const d = dealById(id);
+  if(!d) return '<div class="card empty">Lead not found. <a class="lnk" onclick="App.go(\'pipeline\')">Back to pipeline</a></div>';
+  const comp = d.companyId ? companyById(d.companyId) : null;
+  const con  = d.contactId ? contactById(d.contactId) : null;
+  const statusPill = d.status==='won' ? '<span class="pill green">Won</span>'
+    : d.status==='lost' ? '<span class="pill red">Lost</span>' : '<span class="pill blue">Open — '+esc(d.stage)+'</span>';
+
+  return `
+  <div class="page-head">
+    <div><h2>${esc(d.name)}</h2><div class="sub"><a class="lnk" onclick="App.go('pipeline')">&larr; Back to pipeline</a></div></div>
+    <div style="display:flex;gap:10px">
+      ${d.status==='open' ? '<button class="btn danger small" onclick="App.markLost(\''+d.id+'\')">Mark lost</button>':''}
+      ${d.status!=='open' ? '<button class="btn ghost small" onclick="App.reopenDeal(\''+d.id+'\')">Reopen</button>':''}
+      <button class="btn" onclick="App.openDealForm('${d.id}')">Edit</button>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1.1fr .9fr;align-items:start">
+    <div class="card">
+      <div class="section-title">Details ${statusPill} ${d.source==='claude'?'<span class="pill amber">AI suggested</span>':''}</div>
+      <div class="kv">
+        <div class="k">Value</div><div><b>${fmt(d.value)}</b></div>
+        <div class="k">Stage</div><div>${esc(d.stage)} (${Math.round((STAGE_PROB[d.stage]||0)*100)}% likely)</div>
+        <div class="k">Weighted value</div><div>${fmt(d.value*(STAGE_PROB[d.stage]||0))}</div>
+        <div class="k">Company</div><div>${comp?`<a class="lnk" onclick="App.go('company','${comp.id}')">${esc(comp.name)}</a>`:'—'}</div>
+        <div class="k">Contact</div><div>${con?`<a class="lnk" onclick="App.go('contact','${con.id}')">${esc(contactName(con))}</a>${con.role?' · '+esc(con.role):''}`:'—'}</div>
+        <div class="k">Next step</div><div>${esc(d.nextStep)||'—'}</div>
+        <div class="k">Created</div><div>${fdate(d.createdAt)}</div>
+        <div class="k">Closed</div><div>${fdate(d.closedAt)}</div>
+      </div>
+      ${store.bank.connected && d.status==='open' ? `
+        <div class="banner" style="margin-top:16px;margin-bottom:0">
+          <b>Bank impact if this closes:</b> ${fmt(store.bank.balance)} &rarr; <b>${fmt(store.bank.balance + d.value)}</b>
+          (${fmtSigned(d.value)})
+        </div>`:''}
+    </div>
+    <div class="card">
+      <div class="section-title">Notes &amp; activity</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="dn_text" placeholder="Add a note… e.g. Called buyer, sending price list" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px"
+          onkeydown="if(event.key==='Enter')App.addDealNote('${d.id}')">
+        <button class="btn small" onclick="App.addDealNote('${d.id}')">Add</button>
+      </div>
+      ${(d.notes&&d.notes.length)? d.notes.map(n=>`
+        <div class="note-item"><div>${esc(n.text)}</div><div class="when">${new Date(n.at).toLocaleString()}</div></div>`).join('')
+        : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No notes yet.</div>'}
+    </div>
+  </div>`;
+}
+
+/* ---------------- Contacts ---------------- */
+function renderContacts(){
+  const q = (App._contactQ||'').toLowerCase();
+  const list = store.contacts.filter(c=>{
+    if(!q) return true;
+    const comp = c.companyId ? (companyById(c.companyId)||{}).name : '';
+    return (contactName(c)+' '+(c.role||'')+' '+(c.email||'')+' '+comp).toLowerCase().includes(q);
+  }).sort((a,b)=>contactName(a).localeCompare(contactName(b)));
+
+  return `
+  <div class="page-head">
+    <div><h2>Contacts</h2><div class="sub">${store.contacts.length} people in your book</div></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input class="search" placeholder="Search contacts…" value="${esc(App._contactQ||'')}"
+        oninput="App._contactQ=this.value;App.go('contacts')">
+      <button class="btn" onclick="App.openContactForm()">+ New contact</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0">
+    ${list.length? `<table>
+      <thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Email</th><th>Phone</th><th>Open deals</th></tr></thead>
+      <tbody>${list.map(c=>{
+        const comp = c.companyId ? companyById(c.companyId) : null;
+        const openDeals = store.deals.filter(d=>d.contactId===c.id && d.status==='open').length;
+        return `<tr class="clickable" onclick="App.go('contact','${c.id}')">
+          <td><b>${esc(contactName(c))}</b></td><td>${esc(c.role)||'—'}</td>
+          <td>${comp?esc(comp.name):'—'}</td><td>${esc(c.email)||'—'}</td><td>${esc(c.phone)||'—'}</td>
+          <td>${openDeals||'—'}</td></tr>`;
+      }).join('')}</tbody></table>`
+    : `<div class="empty"><div class="big">&#128100;</div><p><b>No contacts yet.</b></p>
+       <p style="margin-top:6px">Add the people you deal with — buyers, procurement leads, store owners.</p>
+       <button class="btn" style="margin-top:14px" onclick="App.openContactForm()">+ Add your first contact</button></div>`}
+  </div>`;
+}
+
+function renderContactProfile(id){
+  const c = contactById(id);
+  if(!c) return '<div class="card empty">Contact not found. <a class="lnk" onclick="App.go(\'contacts\')">Back to contacts</a></div>';
+  const comp = c.companyId ? companyById(c.companyId) : null;
+  const deals = store.deals.filter(d=>d.contactId===c.id);
+  return `
+  <div class="page-head">
+    <div><h2>${esc(contactName(c))}</h2><div class="sub"><a class="lnk" onclick="App.go('contacts')">&larr; Back to contacts</a></div></div>
+    <button class="btn" onclick="App.openContactForm('${c.id}')">Edit contact</button>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1.2fr;align-items:start">
+    <div class="card">
+      <div class="profile-top" style="margin-bottom:16px">
+        <div style="display:flex;gap:14px;align-items:center">
+          <div class="avatar">${initials(contactName(c))}</div>
+          <div><b style="font-size:16px">${esc(contactName(c))}</b>
+          <div style="color:var(--muted);font-size:13px;font-family:sans-serif">${esc(c.role)||'No role set'}</div></div>
+        </div>
+      </div>
+      <div class="kv">
+        <div class="k">Company</div><div>${comp?`<a class="lnk" onclick="App.go('company','${comp.id}')">${esc(comp.name)}</a>`:'—'}</div>
+        <div class="k">Email</div><div>${c.email?`<a class="lnk" href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:'—'}</div>
+        <div class="k">Phone</div><div>${esc(c.phone)||'—'}</div>
+        <div class="k">Added</div><div>${fdate(c.createdAt)}</div>
+      </div>
+      ${c.notes?`<div style="margin-top:16px"><div class="section-title">Notes</div>
+        <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+    </div>
+    <div class="card">
+      <div class="section-title">Deals with ${esc(c.firstName)}</div>
+      ${deals.length? `<table><thead><tr><th>Deal</th><th>Stage</th><th>Value</th><th>Status</th></tr></thead><tbody>
+        ${deals.map(d=>`<tr class="clickable" onclick="App.go('deal','${d.id}')">
+          <td>${esc(d.name)}</td><td>${esc(d.stage)}</td><td>${fmt(d.value)}</td>
+          <td>${d.status==='won'?'<span class="pill green">Won</span>':d.status==='lost'?'<span class="pill red">Lost</span>':'<span class="pill blue">Open</span>'}</td>
+        </tr>`).join('')}</tbody></table>`
+      : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No deals linked to this contact yet.</div>'}
+      <button class="btn small ghost" style="margin-top:14px" onclick="App.openDealForm()">+ New lead</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Companies ---------------- */
+function renderCompanies(){
+  const q = (App._companyQ||'').toLowerCase();
+  const list = store.companies.filter(c=> !q || (c.name+' '+(c.industry||'')+' '+(c.location||'')).toLowerCase().includes(q))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  return `
+  <div class="page-head">
+    <div><h2>Companies</h2><div class="sub">${store.companies.length} organisations</div></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input class="search" placeholder="Search companies…" value="${esc(App._companyQ||'')}"
+        oninput="App._companyQ=this.value;App.go('companies')">
+      <button class="btn" onclick="App.openCompanyForm()">+ New company</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0">
+    ${list.length? `<table>
+      <thead><tr><th>Company</th><th>Industry</th><th>Location</th><th>Contacts</th><th>Open pipeline</th><th>Won</th></tr></thead>
+      <tbody>${list.map(c=>{
+        const contacts = store.contacts.filter(x=>x.companyId===c.id).length;
+        const open = store.deals.filter(d=>d.companyId===c.id&&d.status==='open').reduce((s,d)=>s+d.value,0);
+        const won  = store.deals.filter(d=>d.companyId===c.id&&d.status==='won').reduce((s,d)=>s+d.value,0);
+        return `<tr class="clickable" onclick="App.go('company','${c.id}')">
+          <td><b>${esc(c.name)}</b></td><td>${esc(c.industry)||'—'}</td><td>${esc(c.location)||'—'}</td>
+          <td>${contacts||'—'}</td><td>${open?fmt(open):'—'}</td><td>${won?fmt(won):'—'}</td></tr>`;
+      }).join('')}</tbody></table>`
+    : `<div class="empty"><div class="big">&#127970;</div><p><b>No companies yet.</b></p>
+       <p style="margin-top:6px">Track the retailers, wholesalers and distributors you sell to.</p>
+       <button class="btn" style="margin-top:14px" onclick="App.openCompanyForm()">+ Add your first company</button></div>`}
+  </div>`;
+}
+
+function renderCompanyProfile(id){
+  const c = companyById(id);
+  if(!c) return '<div class="card empty">Company not found. <a class="lnk" onclick="App.go(\'companies\')">Back to companies</a></div>';
+  const contacts = store.contacts.filter(x=>x.companyId===c.id);
+  const deals = store.deals.filter(d=>d.companyId===c.id);
+  const open = deals.filter(d=>d.status==='open').reduce((s,d)=>s+d.value,0);
+  const won  = deals.filter(d=>d.status==='won').reduce((s,d)=>s+d.value,0);
+  return `
+  <div class="page-head">
+    <div><h2>${esc(c.name)}</h2><div class="sub"><a class="lnk" onclick="App.go('companies')">&larr; Back to companies</a></div></div>
+    <button class="btn" onclick="App.openCompanyForm('${c.id}')">Edit company</button>
+  </div>
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Open pipeline</div><div class="val">${fmt(open)}</div></div>
+    <div class="card kpi"><div class="lbl">Revenue won</div><div class="val">${fmt(won)}</div></div>
+    <div class="card kpi"><div class="lbl">Contacts</div><div class="val">${contacts.length}</div></div>
+    <div class="card kpi"><div class="lbl">Deals total</div><div class="val">${deals.length}</div></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1.2fr;align-items:start">
+    <div class="card">
+      <div class="profile-top" style="margin-bottom:16px">
+        <div style="display:flex;gap:14px;align-items:center">
+          <div class="avatar sq">${initials(c.name)}</div>
+          <div><b style="font-size:16px">${esc(c.name)}</b>
+          <div style="color:var(--muted);font-size:13px;font-family:sans-serif">${esc(c.industry)||'No industry set'}</div></div>
+        </div>
+      </div>
+      <div class="kv">
+        <div class="k">Location</div><div>${esc(c.location)||'—'}</div>
+        <div class="k">Website</div><div>${c.website?`<a class="lnk" href="${esc(c.website.startsWith('http')?c.website:'https://'+c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`:'—'}</div>
+        <div class="k">Added</div><div>${fdate(c.createdAt)}</div>
+      </div>
+      ${c.notes?`<div style="margin-top:16px"><div class="section-title">Notes</div>
+        <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+      <div style="margin-top:18px">
+        <div class="section-title">People here</div>
+        ${contacts.length? contacts.map(x=>`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;font-family:'Segoe UI',sans-serif;font-size:13.5px">
+            <div class="avatar" style="width:32px;height:32px;font-size:12px">${initials(contactName(x))}</div>
+            <div><a class="lnk" onclick="App.go('contact','${x.id}')">${esc(contactName(x))}</a>
+            <div style="color:var(--muted);font-size:12px">${esc(x.role)||''}</div></div>
+          </div>`).join('')
+        : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No contacts at this company yet.</div>'}
+        <button class="btn small ghost" style="margin-top:6px" onclick="App.openContactForm()">+ Add contact</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Deals with ${esc(c.name)}</div>
+      ${deals.length? `<table><thead><tr><th>Deal</th><th>Stage</th><th>Value</th><th>Status</th><th>Created</th></tr></thead><tbody>
+        ${deals.map(d=>`<tr class="clickable" onclick="App.go('deal','${d.id}')">
+          <td>${esc(d.name)}</td><td>${esc(d.stage)}</td><td>${fmt(d.value)}</td>
+          <td>${d.status==='won'?'<span class="pill green">Won</span>':d.status==='lost'?'<span class="pill red">Lost</span>':'<span class="pill blue">Open</span>'}</td>
+          <td>${fdate(d.createdAt)}</td></tr>`).join('')}</tbody></table>`
+      : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No deals with this company yet.</div>'}
+      <button class="btn small ghost" style="margin-top:14px" onclick="App.openDealForm()">+ New lead</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Banking ---------------- */
+function renderBanking(){
+  const b = store.bank;
+  const s = statPack();
+  if(!b.connected){
+    return `
+    <div class="page-head"><div><h2>Banking</h2>
+      <div class="sub">See what closing a deal would do to your cash position.</div></div></div>
+    <div class="card empty">
+      <div class="big">&#127974;</div>
+      <p><b>No bank account linked.</b></p>
+      <p style="margin-top:6px;max-width:480px;margin-left:auto;margin-right:auto">
+        Link your account by entering your balance and importing a CSV of transactions from your online banking.
+        Everything stays on this device — nothing is uploaded anywhere.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.openBankLink()">Link bank account</button>
+    </div>`;
+  }
+
+  // monthly net flow from transactions (last 6 months present in data)
+  const byMonth = {};
+  b.transactions.forEach(t=>{ if(!t.date) return; const k = monthKey(t.date); byMonth[k]=(byMonth[k]||0)+t.amount; });
+  const flowKeys = Object.keys(byMonth).sort().slice(-6);
+  const flowSeries = flowKeys.map(k=>({label:monthLabel(k), value: Math.round(byMonth[k])}));
+
+  const openDeals = s.open.slice().sort((a,b)=>b.value-a.value);
+
+  return `
+  <div class="page-head">
+    <div><h2>Banking — ${esc(b.bankName)}</h2>
+    <div class="sub">Data stays on this device. ${b.transactions.length} transactions on record.</div></div>
+    <button class="btn ghost small" onclick="App.unlinkBank()">Unlink account</button>
+  </div>
+
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Current balance</div><div class="val">${fmt(b.balance)}</div>
+      <div class="note" style="display:flex;gap:6px;margin-top:8px">
+        <input id="bk_newbal" type="number" step="0.01" placeholder="Update…" style="width:110px;padding:5px 8px;border:1px solid var(--border);border-radius:6px">
+        <button class="btn small" onclick="App.updateBalance()">Set</button></div></div>
+    <div class="card kpi"><div class="lbl">If ALL open deals close</div><div class="val">${fmt(b.balance + s.pipelineValue)}</div><div class="note">${fmtSigned(s.pipelineValue)} from ${s.open.length} deals</div></div>
+    <div class="card kpi"><div class="lbl">Realistic (weighted) projection</div><div class="val">${fmt(b.balance + s.weighted)}</div><div class="note">${fmtSigned(Math.round(s.weighted))} weighted by stage</div></div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="card">
+      <div class="chart-title">Deal impact on cash — if each open deal closes</div>
+      ${openDeals.length? `<table><thead><tr><th>Deal</th><th>Stage</th><th>Value</th><th>Projected balance</th></tr></thead><tbody>
+        ${openDeals.map(d=>`<tr class="clickable" onclick="App.go('deal','${d.id}')">
+          <td>${esc(d.name)}</td><td>${esc(d.stage)}</td><td>${fmtSigned(d.value)}</td>
+          <td><b>${fmt(b.balance + d.value)}</b></td></tr>`).join('')}
+        </tbody></table>`
+      : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No open deals in the pipeline — add some leads to model their impact.</div>'}
+    </div>
+    <div class="card">
+      <div class="chart-title">Monthly net cash flow (from imported transactions)</div>
+      ${flowSeries.length? svgBars(flowSeries, '#2b6cb0', true)
+        : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">Import a transactions CSV to see cash flow.</div>'}
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;font-family:'Segoe UI',sans-serif;font-size:13px">
+        <input type="file" id="bk_more_csv" accept=".csv,text/csv">
+        <button class="btn small" onclick="App.importMoreCsv()">Import CSV</button>
+      </div>
+    </div>
+  </div>
+
+  ${b.transactions.length? `<div class="card" style="margin-top:16px">
+    <div class="chart-title">Recent transactions</div>
+    <table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>
+    ${b.transactions.slice(0,25).map(t=>`<tr><td>${fdate(t.date)}</td><td>${esc(t.desc)}</td>
+      <td style="text-align:right;color:${t.amount<0?'var(--red)':'var(--green-dark)'};font-weight:600">${fmtSigned(t.amount)}</td></tr>`).join('')}
+    </tbody></table>
+    ${b.transactions.length>25?`<div style="color:var(--muted);font-size:12px;margin-top:8px;font-family:sans-serif">Showing latest 25 of ${b.transactions.length}.</div>`:''}
+  </div>`:''}
+  `;
+}
+
+function parseCsvTransactions(text){
+  const out = [];
+  text.split(/\r?\n/).forEach(line=>{
+    if(!line.trim()) return;
+    const parts = line.split(',').map(p=>p.trim().replace(/^"|"$/g,''));
+    if(parts.length < 3) return;
+    const amount = Number(parts[parts.length-1].replace(/[£$€,\s]/g,''));
+    if(isNaN(amount)) return; // header row or bad line
+    const dateRaw = parts[0];
+    const d = new Date(dateRaw);
+    const date = isNaN(d.getTime()) ? null : d.toISOString();
+    out.push({date, desc: parts.slice(1,-1).join(', ') || 'Transaction', amount});
+  });
+  return out.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+}
+
+/* ---------------- Settings ---------------- */
+function renderSettings(){
+  const a = getAuth();
+  const pwEnabled = a && a.enabled;
+  return `
+  <div class="page-head"><div><h2>Settings</h2><div class="sub">Company, security and data.</div></div></div>
+  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+    <div class="card">
+      <div class="section-title">Company</div>
+      <div class="frow"><label>Company name</label><input id="st_name" value="${esc(store.settings.companyName)}"></div>
+      <div class="frow"><label>Currency</label>
+        <select id="st_curr">
+          ${['£','$','€'].map(c=>`<option ${store.settings.currency===c?'selected':''}>${c}</option>`).join('')}
+        </select></div>
+      <button class="btn" onclick="App.saveSettings()">Save</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Security</div>
+      <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
+        Password protection: <b style="color:${pwEnabled?'var(--green-dark)':'var(--red)'}">${pwEnabled?'ON':'OFF'}</b>.
+        Once unlocked, this device stays remembered for 30 days (or until you press Lock).</p>
+      <div class="f2">
+        <div class="frow"><label>${pwEnabled?'New password':'Set a password'}</label><input type="password" id="st_pw1"></div>
+        <div class="frow"><label>Confirm</label><input type="password" id="st_pw2"></div>
+      </div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" onclick="App.changePassword()">${pwEnabled?'Change password':'Enable password'}</button>
+        ${pwEnabled?'<button class="btn ghost" onclick="App.forgetDevice()">Forget this device</button><button class="btn danger" onclick="App.disablePassword()">Disable</button>':''}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Claude (AI lead generation)</div>
+      <div class="frow"><label>Anthropic API key</label>
+        <input type="password" id="st_key" value="${esc(store.settings.apiKey)}" placeholder="sk-ant-...">
+        <div class="hint">Stored only in this browser's local storage. Used for the "Ask Claude to generate leads" button. Keys can be created at console.anthropic.com.</div></div>
+      <button class="btn" onclick="App.saveApiKey()">Save key</button>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Data</div>
+      <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
+        All CRM data lives in this browser. Export a backup regularly.</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+        <button class="btn" onclick="App.exportData()">Export backup (JSON)</button>
+        <input type="file" id="st_import" accept=".json" style="font-size:12px">
+        <button class="btn ghost" onclick="App.importData()">Restore</button>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <button class="btn danger" onclick="App.clearAll()">Delete all data</button>
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   SVG CHART HELPERS (no external libraries)
+   ===================================================================== */
+function svgBars(items, color, money){
+  if(!items.length) return '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No data yet.</div>';
+  const W=480, H=190, pad=26, bw = (W-pad*2)/items.length;
+  const max = Math.max(1, ...items.map(i=>Math.abs(i.value)));
+  const zero = H-38; // baseline
+  const scale = (zero-14)/max;
+  let bars='';
+  items.forEach((it,i)=>{
+    const h = Math.abs(it.value)*scale;
+    const x = pad + i*bw + bw*0.15, w = bw*0.7;
+    const y = it.value>=0 ? zero-h : zero;
+    bars += `<rect x="${x}" y="${y}" width="${w}" height="${Math.max(h,it.value===0?0:2)}" rx="4" fill="${it.value<0?'#b03a2e':color}"/>`;
+    bars += `<text x="${x+w/2}" y="${H-20}" font-size="10.5" text-anchor="middle" fill="#6b7a70" font-family="Segoe UI">${esc(String(it.label).slice(0,11))}</text>`;
+    if(it.value!==0) bars += `<text x="${x+w/2}" y="${(it.value>=0? y-5 : zero+h+12)}" font-size="10" text-anchor="middle" fill="#1e2a23" font-family="Segoe UI">${money?fmt(it.value):it.value}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%"><line x1="${pad}" y1="${zero}" x2="${W-pad}" y2="${zero}" stroke="#e2ded2"/>${bars}</svg>`;
+}
+function svgHBars(items){
+  if(!items.length) return '';
+  const W=900, rowH=34, H=items.length*rowH+10;
+  const max = Math.max(1, ...items.map(i=>i.value));
+  let rows='';
+  items.forEach((it,i)=>{
+    const y = 8+i*rowH;
+    const w = Math.max(4,(it.value/max)*(W-330));
+    rows += `<text x="0" y="${y+15}" font-size="12.5" fill="#1e2a23" font-family="Segoe UI">${esc(String(it.label).slice(0,34))}</text>
+      <rect x="250" y="${y+2}" width="${w}" height="18" rx="5" fill="#1e5c40"/>
+      <text x="${255+w}" y="${y+16}" font-size="12" fill="#6b7a70" font-family="Segoe UI">${fmt(it.value)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%">${rows}</svg>`;
+}
+function svgLine(items, color){
+  if(!items.length) return '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No data yet.</div>';
+  const W=480, H=190, pad=28;
+  const max = Math.max(1, ...items.map(i=>i.value));
+  const stepX = (W-pad*2)/Math.max(1,items.length-1);
+  const y = v => (H-38) - (v/max)*(H-64);
+  const pts = items.map((it,i)=> (pad+i*stepX)+','+y(it.value)).join(' ');
+  let dots='', labels='';
+  items.forEach((it,i)=>{
+    const px = pad+i*stepX;
+    dots += `<circle cx="${px}" cy="${y(it.value)}" r="4" fill="${color}"/>
+      <text x="${px}" y="${y(it.value)-9}" font-size="10.5" text-anchor="middle" fill="#1e2a23" font-family="Segoe UI">${it.value||''}</text>`;
+    labels += `<text x="${px}" y="${H-20}" font-size="10.5" text-anchor="middle" fill="#6b7a70" font-family="Segoe UI">${esc(it.label)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%">
+    <line x1="${pad}" y1="${H-38}" x2="${W-pad}" y2="${H-38}" stroke="#e2ded2"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${dots}${labels}</svg>`;
+}
+function svgDonut(segments){
+  const total = segments.reduce((s,x)=>s+x.value,0);
+  if(!total) return '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No data yet.</div>';
+  const R=62, C=2*Math.PI*R;
+  let off=0, circles='';
+  segments.forEach(seg=>{
+    if(!seg.value) return;
+    const frac = seg.value/total;
+    circles += `<circle r="${R}" cx="95" cy="95" fill="none" stroke="${seg.color}" stroke-width="26"
+      stroke-dasharray="${frac*C} ${C}" stroke-dashoffset="${-off*C}" transform="rotate(-90 95 95)"/>`;
+    off += frac;
+  });
+  const legend = segments.map(s=>`<span><span class="sw" style="background:${s.color}"></span>${esc(s.label)} (${s.value})</span>`).join('');
+  return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <svg viewBox="0 0 190 190" style="width:170px">${circles}
+      <text x="95" y="90" text-anchor="middle" font-size="24" font-weight="bold" fill="#1e2a23" font-family="Georgia">${total}</text>
+      <text x="95" y="110" text-anchor="middle" font-size="11" fill="#6b7a70" font-family="Segoe UI">deals</text></svg>
+    <div class="legend" style="flex-direction:column;align-items:flex-start;gap:8px">${legend}</div></div>`;
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+if(getAuth() === null){ showLock(); }        // first run — offer password setup
+else if(isUnlocked()){ showApp(); }
+else { showLock(); }
+</script>
+</body>
+</html>
