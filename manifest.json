@@ -1,0 +1,14 @@
+{
+  "name": "Lakhani Foods CRM",
+  "short_name": "LF CRM",
+  "description": "Customer relationship manager for Lakhani Foods Ltd — pipeline, contacts, stock and analytics.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4ee",
+  "theme_color": "#143f2c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

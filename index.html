@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lakhani Foods CRM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#143f2c">
+<link rel="icon" href="icon-192.png">
 <style>
   :root{
     --bg:#f6f4ee; --panel:#ffffff; --ink:#1e2a23; --muted:#6b7a70;
@@ -145,6 +148,7 @@
     <button class="nav-btn" data-view="pipeline"  onclick="App.go('pipeline')"><span class="ico">&#128736;</span> Lead Pipeline</button>
     <button class="nav-btn" data-view="contacts"  onclick="App.go('contacts')"><span class="ico">&#128100;</span> Contacts</button>
     <button class="nav-btn" data-view="companies" onclick="App.go('companies')"><span class="ico">&#127970;</span> Companies</button>
+    <button class="nav-btn" data-view="stock"     onclick="App.go('stock')"><span class="ico">&#128230;</span> Stock</button>
     <button class="nav-btn" data-view="banking"   onclick="App.go('banking')"><span class="ico">&#127974;</span> Banking</button>
     <button class="nav-btn" data-view="settings"  onclick="App.go('settings')"><span class="ico">&#9881;&#65039;</span> Settings</button>
     <div class="side-bottom">
@@ -172,6 +176,7 @@ const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_re
 function freshData(){
   return {
     contacts:[], companies:[], deals:[],
+    stock:{items:[], incoming:[]},
     bank:{connected:false, bankName:'', balance:0, transactions:[]},
     settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:''}
   };
@@ -183,7 +188,7 @@ function loadStore(){
     if(!raw) return freshData();
     const d = JSON.parse(raw);
     const f = freshData();
-    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, settings:{...f.settings, ...(d.settings||{})}};
+    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, stock:{...f.stock, ...(d.stock||{})}, settings:{...f.settings, ...(d.settings||{})}};
   }catch(e){ return freshData(); }
 }
 function save(){ localStorage.setItem(DATA_KEY, JSON.stringify(store)); }
@@ -332,7 +337,7 @@ const App = {
     $('#sideCompanyName').textContent = store.settings.companyName || 'Lakhani Foods Ltd';
     const r = {
       dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
-      companies: renderCompanies, banking: renderBanking, settings: renderSettings,
+      companies: renderCompanies, banking: renderBanking, settings: renderSettings, stock: renderStock,
       contact: ()=>renderContactProfile(param), company: ()=>renderCompanyProfile(param),
       deal: ()=>renderDealProfile(param)
     }[view] || renderDashboard;
@@ -451,6 +456,13 @@ const App = {
           <div class="frow"><label>Stage</label><select id="df_stage">${stageOpts}</select></div>
         </div>
         <div class="frow"><label>Next step</label><input id="df_next" placeholder="e.g. Send sample box by Friday" value="${esc(d?d.nextStep:'')}"></div>
+        ${store.stock.items.length ? `
+        <div class="frow"><label>Stock required for this deal</label>
+          <div id="dl_rows">${(d&&d.stockLines?d.stockLines:[]).map(l=>dealLineRowHtml(l)).join('')}</div>
+          <button type="button" class="btn small ghost" onclick="App.addDealLine()">+ Add product</button>
+          <div class="hint">Feeds the Stock tab — shows whether you can cover this deal from stock on hand and incoming deliveries.</div>
+        </div>` : `
+        <div class="frow"><div class="hint">Tip: add your products in the <b>Stock</b> tab, then link quantities to deals to forecast shortfalls.</div></div>`}
         <div class="modal-actions">
           ${d?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteDeal(\''+d.id+'\')">Delete</button>':''}
           <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
@@ -462,9 +474,16 @@ const App = {
     const name = $('#df_name').value.trim();
     if(!name){ toast('Deal name is required.', true); return; }
     const stage = $('#df_stage').value;
+    const lines = [];
+    document.querySelectorAll('.dl-row').forEach(r=>{
+      const itemId = r.querySelector('.dl-item').value;
+      const qty = Number(r.querySelector('.dl-qty').value)||0;
+      if(itemId && qty>0) lines.push({itemId, qty});
+    });
     const data = {
       name, companyId:$('#df_company').value||null, contactId:$('#df_contact').value||null,
-      value:Number($('#df_value').value)||0, stage, nextStep:$('#df_next').value.trim()
+      value:Number($('#df_value').value)||0, stage, nextStep:$('#df_next').value.trim(),
+      stockLines: lines
     };
     if(id){
       const d = dealById(id);
@@ -513,6 +532,95 @@ const App = {
     d.notes = d.notes || [];
     d.notes.unshift({at:new Date().toISOString(), text:txt});
     save(); this.go('deal', id);
+  },
+
+  addDealLine(){ $('#dl_rows').insertAdjacentHTML('beforeend', dealLineRowHtml(null)); },
+  fulfillDeal(id){
+    const d = dealById(id); if(!d || d.status!=='won' || d.fulfilled) return;
+    if(!confirm('Mark stock as delivered for this deal? On-hand quantities will be deducted.')) return;
+    (d.stockLines||[]).forEach(l=>{
+      const it = stockItemById(l.itemId);
+      if(it) it.onHand -= l.qty;
+    });
+    d.fulfilled = true; d.fulfilledAt = new Date().toISOString();
+    d.notes = d.notes||[];
+    d.notes.unshift({at:new Date().toISOString(), text:'Stock delivered — quantities deducted from stock on hand.'});
+    save(); this.go('deal', id); toast('Stock deducted for this deal.');
+  },
+
+  /* =============== STOCK =============== */
+  openStockForm(id){
+    const it = id ? stockItemById(id) : null;
+    this.modal(`
+      <div class="modal">
+        <h3>${it?'Edit product':'New product'}</h3>
+        <div class="frow"><label>Product name *</label><input id="sk_name" placeholder="e.g. Garam masala 500g" value="${esc(it?it.name:'')}"></div>
+        <div class="f2">
+          <div class="frow"><label>Unit</label><input id="sk_unit" placeholder="e.g. cases, units, kg" value="${esc(it?it.unit:'cases')}"></div>
+          <div class="frow"><label>Stock on hand</label><input id="sk_onhand" type="number" value="${it?it.onHand:''}"></div>
+        </div>
+        <div class="frow"><label>Supplier</label><input id="sk_supplier" placeholder="e.g. Shah Imports Ltd" value="${esc(it?it.supplier:'')}"></div>
+        <div class="frow"><label>Notes</label><textarea id="sk_notes">${esc(it?it.notes:'')}</textarea></div>
+        <div class="modal-actions">
+          ${it?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteStockItem(\''+it.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveStockItem('${it?it.id:''}')">Save product</button>
+        </div>
+      </div>`);
+  },
+  saveStockItem(id){
+    const name = $('#sk_name').value.trim();
+    if(!name){ toast('Product name is required.', true); return; }
+    const data = { name, unit:$('#sk_unit').value.trim()||'units', onHand:Number($('#sk_onhand').value)||0,
+      supplier:$('#sk_supplier').value.trim(), notes:$('#sk_notes').value.trim() };
+    if(id){ Object.assign(stockItemById(id), data); toast('Product updated.'); }
+    else { store.stock.items.push({id:uid(), createdAt:new Date().toISOString(), ...data}); toast('Product added.'); }
+    save(); this.closeModal(); this.go('stock');
+  },
+  deleteStockItem(id){
+    if(!confirm('Delete this product? It will be removed from deals and incoming deliveries too.')) return;
+    store.stock.items = store.stock.items.filter(i=>i.id!==id);
+    store.stock.incoming = store.stock.incoming.filter(o=>o.itemId!==id);
+    store.deals.forEach(d=>{ if(d.stockLines) d.stockLines = d.stockLines.filter(l=>l.itemId!==id); });
+    save(); this.closeModal(); this.go('stock'); toast('Product deleted.');
+  },
+  openIncomingForm(){
+    if(!store.stock.items.length){ toast('Add a product first.', true); return; }
+    const opts = store.stock.items.map(it=>`<option value="${it.id}">${esc(it.name)} (${esc(it.unit)})</option>`).join('');
+    const defaultDate = new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+    this.modal(`
+      <div class="modal">
+        <h3>Log incoming stock delivery</h3>
+        <div class="frow"><label>Product</label><select id="in_item">${opts}</select></div>
+        <div class="f2">
+          <div class="frow"><label>Quantity</label><input id="in_qty" type="number" min="1"></div>
+          <div class="frow"><label>Expected delivery date</label><input id="in_date" type="date" value="${defaultDate}"></div>
+        </div>
+        <div class="frow"><label>Supplier / reference</label><input id="in_supplier" placeholder="e.g. Shah Imports — PO 1088"></div>
+        <div class="modal-actions">
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveIncoming()">Log delivery</button>
+        </div>
+      </div>`);
+  },
+  saveIncoming(){
+    const qty = Number($('#in_qty').value)||0;
+    if(qty<=0){ toast('Enter a quantity.', true); return; }
+    store.stock.incoming.push({id:uid(), itemId:$('#in_item').value, qty,
+      expectedDate:$('#in_date').value||null, supplier:$('#in_supplier').value.trim(),
+      received:false, createdAt:new Date().toISOString()});
+    save(); this.closeModal(); this.go('stock'); toast('Incoming delivery logged.');
+  },
+  receiveIncoming(id){
+    const o = store.stock.incoming.find(x=>x.id===id); if(!o || o.received) return;
+    const it = stockItemById(o.itemId); if(!it){ toast('Product no longer exists.', true); return; }
+    it.onHand += o.qty; o.received = true; o.receivedAt = new Date().toISOString();
+    save(); this.go('stock'); toast(o.qty+' '+it.unit+' of '+it.name+' received into stock.');
+  },
+  deleteIncoming(id){
+    if(!confirm('Remove this incoming delivery?')) return;
+    store.stock.incoming = store.stock.incoming.filter(o=>o.id!==id);
+    save(); this.go('stock'); toast('Delivery removed.');
   },
 
   /* =============== BANKING =============== */
@@ -783,6 +891,36 @@ For each lead give: a realistic company profile of the kind that exists in this 
    VIEWS
    ===================================================================== */
 
+/* ---------------- Stock helpers ---------------- */
+function stockItemById(id){ return store.stock.items.find(i=>i.id===id); }
+function dealQtyFor(deal, itemId){ return (deal.stockLines||[]).filter(l=>l.itemId===itemId).reduce((s,l)=>s+l.qty,0); }
+function stockStats(item){
+  const wonDeals  = store.deals.filter(d=>d.status==='won' && !d.fulfilled);
+  const openDeals = store.deals.filter(d=>d.status==='open');
+  const committed  = wonDeals.reduce((s,d)=>s+dealQtyFor(d,item.id),0);
+  const openDemand = openDeals.reduce((s,d)=>s+dealQtyFor(d,item.id),0);
+  const weightedDemand = openDeals.reduce((s,d)=>s+dealQtyFor(d,item.id)*(STAGE_PROB[d.stage]||0.1),0);
+  const pending  = store.stock.incoming.filter(o=>o.itemId===item.id && !o.received)
+                    .sort((a,b)=>(a.expectedDate||'').localeCompare(b.expectedDate||''));
+  const incoming = pending.reduce((s,o)=>s+o.qty,0);
+  const availableNow = item.onHand - committed;               // free stock after won-but-undelivered deals
+  const projectedAll = item.onHand + incoming - committed - openDemand; // if every open deal closes
+  return {committed, openDemand, weightedDemand, incoming, availableNow, projectedAll, pending};
+}
+function stockStatus(st){
+  if(st.availableNow < 0) return {cls:'red', txt:'Oversold'};
+  if(st.projectedAll < 0) return {cls:'red', txt:'Shortfall'};
+  if(st.openDemand > 0 && st.availableNow < st.openDemand) return {cls:'amber', txt:'Needs deliveries'};
+  return {cls:'green', txt:'OK'};
+}
+function dealLineRowHtml(l){
+  const opts = store.stock.items.map(it=>`<option value="${it.id}" ${l&&l.itemId===it.id?'selected':''}>${esc(it.name)} (${esc(it.unit)})</option>`).join('');
+  return `<div class="dl-row" style="display:flex;gap:8px;margin-bottom:7px;align-items:center">
+    <select class="dl-item" style="flex:1">${opts}</select>
+    <input class="dl-qty" type="number" min="0" placeholder="Qty" value="${l?l.qty:''}" style="width:90px">
+    <button type="button" class="btn small danger" onclick="this.parentElement.remove()">&times;</button></div>`;
+}
+
 function statPack(){
   const open = store.deals.filter(d=>d.status==='open');
   const won  = store.deals.filter(d=>d.status==='won');
@@ -841,6 +979,12 @@ function renderDashboard(){
     <div class="card kpi"><div class="lbl">New leads this month</div><div class="val">${newThisMonth}</div><div class="note">created in ${monthLabel(nowKey)}</div></div>
     ${bank.connected ? `<div class="card kpi"><div class="lbl">Cash + weighted pipeline</div><div class="val">${fmt(projected)}</div><div class="note">bank ${fmt(bank.balance)} + forecast</div></div>`
       : `<div class="card kpi"><div class="lbl">Bank position</div><div class="val" style="font-size:16px;color:var(--muted)">Not linked</div><div class="note"><a class="lnk" onclick="App.go('banking')">Link your bank</a> to see deal impact</div></div>`}
+    ${store.stock.items.length ? (()=>{
+      const short = store.stock.items.filter(it=>{const s=stockStats(it);return s.projectedAll<0||s.availableNow<0;}).length;
+      return short
+        ? `<div class="card kpi" style="border-left:4px solid var(--red)"><div class="lbl">Stock coverage</div><div class="val" style="color:var(--red)">${short} short</div><div class="note"><a class="lnk" onclick="App.go('stock')">See shortfalls</a> if pipeline closes</div></div>`
+        : `<div class="card kpi"><div class="lbl">Stock coverage</div><div class="val" style="color:var(--green-dark)">OK</div><div class="note">pipeline coverable from stock</div></div>`;
+    })() : ''}
   </div>
 
   ${noData ? `<div class="card empty">
@@ -962,6 +1106,25 @@ function renderDealProfile(id){
         <div class="k">Created</div><div>${fdate(d.createdAt)}</div>
         <div class="k">Closed</div><div>${fdate(d.closedAt)}</div>
       </div>
+      ${(d.stockLines&&d.stockLines.length)? `
+      <div style="margin-top:18px">
+        <div class="section-title">Stock required ${d.fulfilled?'<span class="pill green">Delivered</span>':''}</div>
+        <table><thead><tr><th>Product</th><th>Qty</th><th>Coverage</th></tr></thead><tbody>
+        ${d.stockLines.map(l=>{
+          const it = stockItemById(l.itemId);
+          if(!it) return `<tr><td colspan="3" style="color:var(--muted)">A linked product was deleted.</td></tr>`;
+          const s = stockStats(it);
+          let pill;
+          if(d.fulfilled) pill = '<span class="pill grey">deducted</span>';
+          else if(d.status==='won') pill = '<span class="pill blue">committed</span>';
+          else if(s.availableNow >= l.qty) pill = '<span class="pill green">in stock</span>';
+          else if(s.availableNow + s.incoming >= l.qty) pill = '<span class="pill amber">after deliveries</span>';
+          else pill = '<span class="pill red">shortfall — order more</span>';
+          return `<tr><td>${esc(it.name)}</td><td>${l.qty} ${esc(it.unit)}</td><td>${pill}</td></tr>`;
+        }).join('')}
+        </tbody></table>
+        ${(d.status==='won' && !d.fulfilled)? `<button class="btn small" style="margin-top:10px" onclick="App.fulfillDeal('${d.id}')">Mark stock delivered (deduct from on hand)</button>`:''}
+      </div>`:''}
       ${store.bank.connected && d.status==='open' ? `
         <div class="banner" style="margin-top:16px;margin-bottom:0">
           <b>Bank impact if this closes:</b> ${fmt(store.bank.balance)} &rarr; <b>${fmt(store.bank.balance + d.value)}</b>
@@ -1238,6 +1401,117 @@ function parseCsvTransactions(text){
   return out.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
 }
 
+/* ---------------- Stock ---------------- */
+function renderStock(){
+  const items = store.stock.items;
+  const pendingAll = store.stock.incoming.filter(o=>!o.received)
+    .sort((a,b)=>(a.expectedDate||'9999').localeCompare(b.expectedDate||'9999'));
+  const receivedRecent = store.stock.incoming.filter(o=>o.received).slice(-5).reverse();
+
+  if(!items.length){
+    return `
+    <div class="page-head"><div><h2>Stock holding</h2>
+      <div class="sub">Track products, incoming deliveries and whether you can cover the deals in your pipeline.</div></div></div>
+    <div class="card empty">
+      <div class="big">&#128230;</div>
+      <p><b>No products yet.</b></p>
+      <p style="margin-top:6px;max-width:520px;margin-left:auto;margin-right:auto">
+        Add the products you hold (spice ranges, rice, frozen lines…), then link quantities to your deals.
+        The CRM will show available stock, what's committed to won deals, and any shortfall if your pipeline closes.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.openStockForm()">+ Add your first product</button>
+    </div>`;
+  }
+
+  const statsMap = {};
+  items.forEach(it=>{ statsMap[it.id] = stockStats(it); });
+  const shortfalls = items.filter(it=>{ const s=statsMap[it.id]; return s.projectedAll<0 || s.availableNow<0; });
+  const needsDeliveries = items.filter(it=>{ const s=statsMap[it.id]; return s.projectedAll>=0 && s.availableNow>=0 && s.openDemand>0 && s.availableNow<s.openDemand; });
+  const nextDelivery = pendingAll.length ? pendingAll[0] : null;
+
+  const rows = items.map(it=>{
+    const s = statsMap[it.id];
+    const pill = stockStatus(s);
+    return `<tr>
+      <td><b>${esc(it.name)}</b>${it.supplier?`<div style="font-size:11.5px;color:var(--muted)">from ${esc(it.supplier)}</div>`:''}</td>
+      <td>${esc(it.unit)}</td>
+      <td><b>${it.onHand}</b></td>
+      <td>${s.committed||'—'}</td>
+      <td style="color:${s.availableNow<0?'var(--red)':'inherit'};font-weight:600">${s.availableNow}</td>
+      <td>${s.openDemand||'—'}${s.openDemand?`<div style="font-size:11px;color:var(--muted)">~${Math.round(s.weightedDemand)} weighted</div>`:''}</td>
+      <td>${s.incoming?('+'+s.incoming):'—'}</td>
+      <td style="color:${s.projectedAll<0?'var(--red)':'var(--green-dark)'};font-weight:700">${s.projectedAll}</td>
+      <td><span class="pill ${pill.cls}">${pill.txt}</span></td>
+      <td><button class="btn small ghost" onclick="App.openStockForm('${it.id}')">Edit</button></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="page-head">
+    <div><h2>Stock holding</h2>
+    <div class="sub">Can you cover your pipeline? Committed = won deals awaiting delivery. Projected = on hand + incoming − committed − open pipeline.</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn ghost" onclick="App.openIncomingForm()">+ Log incoming delivery</button>
+      <button class="btn" onclick="App.openStockForm()">+ Add product</button>
+    </div>
+  </div>
+
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Products tracked</div><div class="val">${items.length}</div></div>
+    <div class="card kpi"><div class="lbl">Shortfalls if pipeline closes</div>
+      <div class="val" style="color:${shortfalls.length?'var(--red)':'var(--green-dark)'}">${shortfalls.length}</div>
+      <div class="note">${shortfalls.length?'action needed — see below':'all deals coverable'}</div></div>
+    <div class="card kpi"><div class="lbl">Pending deliveries</div><div class="val">${pendingAll.length}</div>
+      <div class="note">${nextDelivery?('next: '+fdate(nextDelivery.expectedDate)):'none scheduled'}</div></div>
+  </div>
+
+  ${shortfalls.length? `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--red)">
+    <div class="section-title" style="color:var(--red)">&#9888;&#65039; Stock shortfalls</div>
+    ${shortfalls.map(it=>{
+      const s = statsMap[it.id];
+      const short = Math.abs(Math.min(s.projectedAll, s.availableNow));
+      const drivers = store.deals.filter(d=>(d.status==='open'||(d.status==='won'&&!d.fulfilled)) && dealQtyFor(d,it.id)>0)
+        .map(d=>`<a class="lnk" onclick="App.go('deal','${d.id}')">${esc(d.name)}</a> (${dealQtyFor(d,it.id)} ${esc(it.unit)}${d.status==='won'?', won':''})`);
+      return `<div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;margin-bottom:12px">
+        <b>${esc(it.name)}</b> — you would be <b style="color:var(--red)">${short} ${esc(it.unit)} short</b>
+        if all open deals close${s.incoming?` (even after ${s.incoming} ${esc(it.unit)} incoming)`:''}.
+        Order at least <b>${short} ${esc(it.unit)}</b> more${it.supplier?` from ${esc(it.supplier)}`:''}.
+        <div style="color:var(--muted);margin-top:3px">Driven by: ${drivers.join(' · ')||'—'}</div>
+      </div>`;
+    }).join('')}
+  </div>`:''}
+  ${(!shortfalls.length && needsDeliveries.length)? `<div class="banner">
+    <b>Watch:</b> ${needsDeliveries.map(it=>esc(it.name)).join(', ')} ${needsDeliveries.length===1?'is':'are'} only covered once pending deliveries arrive — chase those delivery dates.</div>`:''}
+
+  <div class="card" style="padding:0;margin-bottom:16px">
+    <table>
+      <thead><tr><th>Product</th><th>Unit</th><th>On hand</th><th>Committed (won)</th><th>Available now</th><th>Pipeline demand</th><th>Incoming</th><th>If all deals close</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Incoming deliveries</div>
+    ${pendingAll.length? `<table>
+      <thead><tr><th>Product</th><th>Quantity</th><th>Expected</th><th>Supplier / ref</th><th></th></tr></thead>
+      <tbody>${pendingAll.map(o=>{
+        const it = stockItemById(o.itemId);
+        const overdue = o.expectedDate && o.expectedDate < new Date().toISOString().slice(0,10);
+        return `<tr>
+          <td><b>${it?esc(it.name):'?'}</b></td>
+          <td>+${o.qty} ${it?esc(it.unit):''}</td>
+          <td>${fdate(o.expectedDate)} ${overdue?'<span class="pill red">overdue</span>':''}</td>
+          <td>${esc(o.supplier)||'—'}</td>
+          <td style="text-align:right">
+            <button class="btn small" onclick="App.receiveIncoming('${o.id}')">Mark received</button>
+            <button class="btn small ghost" onclick="App.deleteIncoming('${o.id}')">Remove</button>
+          </td></tr>`;
+      }).join('')}</tbody></table>`
+    : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No deliveries on the way. Log one when you place an order with your supplier.</div>'}
+    ${receivedRecent.length? `<div style="margin-top:14px;font-family:'Segoe UI',sans-serif;font-size:12px;color:var(--muted)">
+      Recently received: ${receivedRecent.map(o=>{const it=stockItemById(o.itemId);return '+'+o.qty+' '+(it?esc(it.name):'?')+' ('+fdate(o.receivedAt)+')';}).join(' · ')}</div>`:''}
+  </div>`;
+}
+
 /* ---------------- Settings ---------------- */
 function renderSettings(){
   const a = getAuth();
@@ -1372,6 +1646,11 @@ function svgDonut(segments){
 if(getAuth() === null){ showLock(); }        // first run — offer password setup
 else if(isUnlocked()){ showApp(); }
 else { showLock(); }
+
+// PWA: register service worker so the app installs on the desktop and works offline
+if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
