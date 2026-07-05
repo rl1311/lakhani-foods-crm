@@ -123,6 +123,16 @@
   .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:'Segoe UI',sans-serif;font-size:12px;color:var(--muted)}
   .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
 
+  /* ---------- Invoice printing ---------- */
+  @media print{
+    body.print-inv > *{ display:none !important; }
+    body.print-inv #modalRoot{ display:block !important; }
+    body.print-inv #modalRoot .modal-bg{ position:static; padding:0; background:#fff; display:block; overflow:visible; }
+    body.print-inv #modalRoot .modal{ box-shadow:none; max-width:100%; padding:0; }
+    body.print-inv #modalRoot .modal > *:not(#invoicePrintArea){ display:none !important; }
+    body.print-inv #invoicePrintArea{ border:none !important; }
+  }
+
   /* ---------- Toast ---------- */
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green-dark);color:#fff;padding:11px 22px;border-radius:9px;font-family:'Segoe UI',sans-serif;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s;z-index:200}
   #toast.show{opacity:1}
@@ -149,6 +159,8 @@
     <button class="nav-btn" data-view="contacts"  onclick="App.go('contacts')"><span class="ico">&#128100;</span> Contacts</button>
     <button class="nav-btn" data-view="companies" onclick="App.go('companies')"><span class="ico">&#127970;</span> Companies</button>
     <button class="nav-btn" data-view="stock"     onclick="App.go('stock')"><span class="ico">&#128230;</span> Stock</button>
+    <button class="nav-btn" data-view="orders"    onclick="App.go('orders')"><span class="ico">&#128203;</span> Orders</button>
+    <button class="nav-btn" data-view="invoices"  onclick="App.go('invoices')"><span class="ico">&#129534;</span> Invoices</button>
     <button class="nav-btn" data-view="banking"   onclick="App.go('banking')"><span class="ico">&#127974;</span> Banking</button>
     <button class="nav-btn" data-view="settings"  onclick="App.go('settings')"><span class="ico">&#9881;&#65039;</span> Settings</button>
     <div class="side-bottom">
@@ -175,10 +187,12 @@ const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_re
 /* ---------------- storage ---------------- */
 function freshData(){
   return {
-    contacts:[], companies:[], deals:[],
+    contacts:[], companies:[], deals:[], orders:[], invoices:[],
     stock:{items:[], incoming:[]},
     bank:{connected:false, bankName:'', balance:0, transactions:[]},
-    settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:''}
+    counters:{invoice:0},
+    settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:'',
+      invoice:{businessName:'', address:'', email:'', phone:'', vatNo:'', termsDays:30, bankDetails:'', footer:'Thank you for your business.'}}
   };
 }
 let store = loadStore();
@@ -188,7 +202,9 @@ function loadStore(){
     if(!raw) return freshData();
     const d = JSON.parse(raw);
     const f = freshData();
-    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, stock:{...f.stock, ...(d.stock||{})}, settings:{...f.settings, ...(d.settings||{})}};
+    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, stock:{...f.stock, ...(d.stock||{})},
+      counters:{...f.counters, ...(d.counters||{})},
+      settings:{...f.settings, ...(d.settings||{}), invoice:{...f.settings.invoice, ...((d.settings||{}).invoice||{})}}};
   }catch(e){ return freshData(); }
 }
 function save(){ localStorage.setItem(DATA_KEY, JSON.stringify(store)); }
@@ -219,6 +235,28 @@ function initials(name){
 function companyById(id){ return store.companies.find(c=>c.id===id); }
 function contactById(id){ return store.contacts.find(c=>c.id===id); }
 function dealById(id){ return store.deals.find(d=>d.id===id); }
+function orderById(id){ return store.orders.find(o=>o.id===id); }
+function invoiceById(id){ return store.invoices.find(i=>i.id===id); }
+function invoiceForOrder(orderId){ return store.invoices.find(i=>i.orderId===orderId); }
+function orderTotal(o){ return (o.items||[]).reduce((s,l)=>s + (l.qty*(l.unitPrice||0)), 0); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function addDaysISO(dateStr, days){ const d = new Date(dateStr); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+function fmtMoney(n){ const c = store.settings.currency||'£'; n = Number(n)||0;
+  return c + n.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function invStatus(inv){
+  if(inv.paidAt) return {txt:'Paid', cls:'green'};
+  if(inv.sentAt) return (inv.dueDate && inv.dueDate < todayISO()) ? {txt:'Overdue', cls:'red'} : {txt:'Sent', cls:'blue'};
+  if(inv.remindAt) return {txt:'Reminder set', cls:'amber'};
+  return {txt:'Not sent', cls:'grey'};
+}
+function dueReminders(){
+  return store.invoices.filter(i=>!i.sentAt && !i.paidAt && i.remindAt && new Date(i.remindAt) <= new Date());
+}
+function billingEmailFor(order){
+  if(order.contactId){ const c = contactById(order.contactId); if(c && c.email) return c.email; }
+  const c2 = store.contacts.find(x=>x.companyId===order.companyId && x.email);
+  return c2 ? c2.email : '';
+}
 function contactName(c){ return c ? (c.firstName+' '+(c.lastName||'')).trim() : '—'; }
 
 async function sha256(text){
@@ -338,6 +376,7 @@ const App = {
     const r = {
       dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
       companies: renderCompanies, banking: renderBanking, settings: renderSettings, stock: renderStock,
+      orders: renderOrders, invoices: renderInvoices,
       contact: ()=>renderContactProfile(param), company: ()=>renderCompanyProfile(param),
       deal: ()=>renderDealProfile(param)
     }[view] || renderDashboard;
@@ -410,6 +449,13 @@ const App = {
           <div class="frow"><label>Location</label><input id="co_loc" value="${esc(c?c.location:'')}"></div>
         </div>
         <div class="frow"><label>Website</label><input id="co_web" value="${esc(c?c.website:'')}"></div>
+        ${store.stock.items.length ? `
+        <div class="frow"><label>Estimated stock requirement per order (SKUs)</label>
+          <div id="ce_rows">${(c&&c.stockEstimates?c.stockEstimates:[]).map(l=>dealLineRowHtml(l)).join('')}</div>
+          <button type="button" class="btn small ghost" onclick="App.addEstimateLine()">+ Add SKU</button>
+          <div class="hint">How much of each SKU this company is likely to take. Deals with this company use these
+          estimates in the stock forecast until you set exact quantities on the deal.</div>
+        </div>` : ''}
         <div class="frow"><label>Notes</label><textarea id="co_notes">${esc(c?c.notes:'')}</textarea></div>
         <div class="modal-actions">
           ${c?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteCompany(\''+c.id+'\')">Delete</button>':''}
@@ -421,8 +467,14 @@ const App = {
   saveCompany(id){
     const name = $('#co_name').value.trim();
     if(!name){ toast('Company name is required.', true); return; }
+    const estimates = [];
+    document.querySelectorAll('#ce_rows .dl-row').forEach(r=>{
+      const itemId = r.querySelector('.dl-item').value;
+      const qty = Number(r.querySelector('.dl-qty').value)||0;
+      if(itemId && qty>0) estimates.push({itemId, qty});
+    });
     const data = { name, industry:$('#co_ind').value.trim(), location:$('#co_loc').value.trim(),
-      website:$('#co_web').value.trim(), notes:$('#co_notes').value.trim() };
+      website:$('#co_web').value.trim(), notes:$('#co_notes').value.trim(), stockEstimates:estimates };
     if(id){ Object.assign(companyById(id), data); toast('Company updated.'); }
     else { store.companies.push({id:uid(), createdAt:new Date().toISOString(), ...data}); toast('Company added.'); }
     save(); this.closeModal(); this.go(this.view, this.param);
@@ -448,7 +500,7 @@ const App = {
         <h3>${d?'Edit lead / deal':'New lead'}</h3>
         <div class="frow"><label>Deal name *</label><input id="df_name" placeholder="e.g. Wholesale supply — spices range" value="${esc(d?d.name:'')}"></div>
         <div class="f2">
-          <div class="frow"><label>Company</label><select id="df_company">${compOpts}</select></div>
+          <div class="frow"><label>Company</label><select id="df_company" onchange="App.prefillFromCompany()">${compOpts}</select></div>
           <div class="frow"><label>Primary contact</label><select id="df_contact">${conOpts}</select></div>
         </div>
         <div class="f2">
@@ -475,7 +527,7 @@ const App = {
     if(!name){ toast('Deal name is required.', true); return; }
     const stage = $('#df_stage').value;
     const lines = [];
-    document.querySelectorAll('.dl-row').forEach(r=>{
+    document.querySelectorAll('#dl_rows .dl-row').forEach(r=>{
       const itemId = r.querySelector('.dl-item').value;
       const qty = Number(r.querySelector('.dl-qty').value)||0;
       if(itemId && qty>0) lines.push({itemId, qty});
@@ -535,10 +587,18 @@ const App = {
   },
 
   addDealLine(){ $('#dl_rows').insertAdjacentHTML('beforeend', dealLineRowHtml(null)); },
+  addEstimateLine(){ $('#ce_rows').insertAdjacentHTML('beforeend', dealLineRowHtml(null)); },
+  prefillFromCompany(){
+    const rowsEl = $('#dl_rows'); if(!rowsEl || rowsEl.children.length) return;
+    const co = companyById($('#df_company').value);
+    if(!co || !co.stockEstimates || !co.stockEstimates.length) return;
+    co.stockEstimates.forEach(l=> rowsEl.insertAdjacentHTML('beforeend', dealLineRowHtml(l)));
+    toast('Stock lines prefilled from '+co.name+"'s estimates — adjust as needed.");
+  },
   fulfillDeal(id){
     const d = dealById(id); if(!d || d.status!=='won' || d.fulfilled) return;
     if(!confirm('Mark stock as delivered for this deal? On-hand quantities will be deducted.')) return;
-    (d.stockLines||[]).forEach(l=>{
+    effectiveLines(d).lines.forEach(l=>{
       const it = stockItemById(l.itemId);
       if(it) it.onHand -= l.qty;
     });
@@ -621,6 +681,272 @@ const App = {
     if(!confirm('Remove this incoming delivery?')) return;
     store.stock.incoming = store.stock.incoming.filter(o=>o.id!==id);
     save(); this.go('stock'); toast('Delivery removed.');
+  },
+
+  /* =============== ORDERS =============== */
+  addOrderLine(){ $('#ol_rows').insertAdjacentHTML('beforeend', orderLineRowHtml(null)); },
+  prefillOrderFromCompany(){
+    const rowsEl = $('#ol_rows'); if(!rowsEl || rowsEl.children.length) return;
+    const co = companyById($('#of_company').value);
+    if(!co || !co.stockEstimates || !co.stockEstimates.length) return;
+    co.stockEstimates.forEach(l=> rowsEl.insertAdjacentHTML('beforeend', orderLineRowHtml(l)));
+    toast('Order lines prefilled from '+co.name+"'s estimates — set quantities and prices.");
+  },
+  openOrderForm(id, presetCompanyId){
+    if(!store.stock.items.length){ toast('Add your products in the Stock tab first — orders are built from SKUs.', true); return; }
+    if(!store.companies.length){ toast('Add a company first — every order belongs to a company.', true); return; }
+    const o = id ? orderById(id) : null;
+    const compOpts = store.companies.map(co=>`<option value="${co.id}" ${(o?o.companyId:presetCompanyId)===co.id?'selected':''}>${esc(co.name)}</option>`).join('');
+    const conOpts = ['<option value="">— none —</option>'].concat(
+      store.contacts.map(c=>`<option value="${c.id}" ${o&&o.contactId===c.id?'selected':''}>${esc(contactName(c))}</option>`)).join('');
+    this.modal(`
+      <div class="modal">
+        <h3>${o?'Edit order':'New confirmed order'}</h3>
+        <div class="f2">
+          <div class="frow"><label>Company *</label><select id="of_company" onchange="App.prefillOrderFromCompany()">${compOpts}</select></div>
+          <div class="frow"><label>Contact</label><select id="of_contact">${conOpts}</select></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Order / PO reference</label><input id="of_ref" placeholder="e.g. PO-2091" value="${esc(o?o.ref:'')}"></div>
+          <div class="frow"><label>Order date</label><input id="of_date" type="date" value="${o?o.orderDate:todayISO()}"></div>
+        </div>
+        <div class="frow"><label>Delivery date (optional)</label><input id="of_delivery" type="date" value="${esc(o&&o.deliveryDate?o.deliveryDate:'')}"></div>
+        <div class="frow"><label>Order lines (SKU × quantity × unit price)</label>
+          <div id="ol_rows">${(o&&o.items?o.items:[]).map(l=>orderLineRowHtml(l)).join('')}</div>
+          <button type="button" class="btn small ghost" onclick="App.addOrderLine()">+ Add SKU</button>
+          <div class="hint">Choosing a company prefills its estimated SKUs. Total is calculated automatically.</div>
+        </div>
+        <div class="modal-actions">
+          ${o?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteOrder(\''+o.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveOrder('${o?o.id:''}')">${o?'Save order':'Save confirmed order'}</button>
+        </div>
+      </div>`);
+    if(!o && presetCompanyId) this.prefillOrderFromCompany();
+  },
+  saveOrder(id){
+    const companyId = $('#of_company').value;
+    if(!companyId){ toast('Choose a company.', true); return; }
+    const items = [];
+    document.querySelectorAll('#ol_rows .ol-row').forEach(r=>{
+      const itemId = r.querySelector('.ol-item').value;
+      const qty = Number(r.querySelector('.ol-qty').value)||0;
+      const unitPrice = Number(r.querySelector('.ol-price').value)||0;
+      if(itemId && qty>0) items.push({itemId, qty, unitPrice});
+    });
+    if(!items.length){ toast('Add at least one order line with a quantity.', true); return; }
+    const data = { companyId, contactId:$('#of_contact').value||null, ref:$('#of_ref').value.trim(),
+      orderDate:$('#of_date').value||todayISO(), deliveryDate:$('#of_delivery').value||null, items };
+    if(id){
+      const o = orderById(id);
+      Object.assign(o, data);
+      const inv = invoiceForOrder(id);
+      if(inv && !inv.paidAt) inv.amount = orderTotal(o);
+      save(); this.closeModal(); this.go(this.view, this.param); toast('Order updated.');
+    } else {
+      const o = {id:uid(), createdAt:new Date().toISOString(), status:'confirmed', ...data};
+      store.orders.push(o);
+      save();
+      this.openInvoicePrompt(o.id);
+    }
+  },
+  deleteOrder(id){
+    const inv = invoiceForOrder(id);
+    if(!confirm('Delete this order'+(inv?' and its invoice '+inv.number:'')+'?')) return;
+    store.orders = store.orders.filter(o=>o.id!==id);
+    store.invoices = store.invoices.filter(i=>i.orderId!==id);
+    save(); this.closeModal(); this.go('orders'); toast('Order deleted.');
+  },
+  fulfillOrder(id){
+    const o = orderById(id); if(!o || o.status==='fulfilled') return;
+    if(!confirm('Mark this order as delivered? Quantities will be deducted from stock on hand.')) return;
+    o.items.forEach(l=>{ const it = stockItemById(l.itemId); if(it) it.onHand -= l.qty; });
+    o.status='fulfilled'; o.fulfilledAt = new Date().toISOString();
+    save(); this.go(this.view, this.param); toast('Order fulfilled — stock deducted.');
+  },
+
+  /* =============== INVOICES =============== */
+  createInvoice(orderId, opts){
+    opts = opts||{};
+    const o = orderById(orderId);
+    const existing = invoiceForOrder(orderId);
+    if(existing) return existing;
+    store.counters.invoice = (store.counters.invoice||0) + 1;
+    const num = 'INV-' + String(store.counters.invoice).padStart(4,'0');
+    const terms = Number((store.settings.invoice||{}).termsDays)||30;
+    const inv = {id:uid(), number:num, orderId, companyId:o.companyId,
+      issueDate:todayISO(), dueDate:addDaysISO(todayISO(), terms), amount:orderTotal(o),
+      sentAt:null, paidAt:null, remindAt: opts.remindHours ? new Date(Date.now()+opts.remindHours*3600e3).toISOString() : null,
+      createdAt:new Date().toISOString()};
+    store.invoices.push(inv);
+    save();
+    return inv;
+  },
+  openInvoicePrompt(orderId){
+    const o = orderById(orderId);
+    const co = companyById(o.companyId);
+    this.modal(`
+      <div class="modal">
+        <h3>&#9989; Order saved — invoice ${esc(co?co.name:'')} ${fmtMoney(orderTotal(o))}</h3>
+        <p class="sans" style="font-size:13.5px;color:#555;margin-bottom:18px">
+          The invoice has been drafted automatically. What would you like to do?</p>
+        <button class="btn" style="width:100%;margin-bottom:10px" onclick="App.invoicePromptChoice('${orderId}','send')">
+          &#128231; Send the invoice now (opens your email, pre-filled)</button>
+        <button class="btn amber" style="width:100%;margin-bottom:10px" onclick="App.invoicePromptChoice('${orderId}','remind')">
+          &#9200; Remind me to send it in 24 hours</button>
+        <button class="btn ghost" style="width:100%" onclick="App.invoicePromptChoice('${orderId}','later')">
+          Not now — I'll do it from the Invoices tab</button>
+      </div>`);
+  },
+  invoicePromptChoice(orderId, choice){
+    if(choice==='remind'){
+      this.createInvoice(orderId, {remindHours:24});
+      this.closeModal(); this.go('invoices');
+      toast('Reminder set — the CRM will prompt you in 24 hours.');
+    } else if(choice==='send'){
+      const inv = this.createInvoice(orderId);
+      this.openInvoiceView(inv.id);
+    } else {
+      this.createInvoice(orderId);
+      this.closeModal(); this.go('invoices');
+      toast('Invoice drafted — find it in the Invoices tab (status: Not sent).');
+    }
+  },
+  invoiceText(inv){
+    const o = orderById(inv.orderId); const co = companyById(inv.companyId);
+    const biz = store.settings.invoice||{};
+    const bizName = biz.businessName || store.settings.companyName || 'Lakhani Foods Ltd';
+    const lines = (o?o.items:[]).map(l=>{
+      const it = stockItemById(l.itemId);
+      return '  ' + (it?it.name:'Item') + ' — ' + l.qty + ' × ' + fmtMoney(l.unitPrice) + ' = ' + fmtMoney(l.qty*l.unitPrice);
+    }).join('\n');
+    return bizName + '\n' + (biz.address||'') + (biz.vatNo?('\nVAT: '+biz.vatNo):'') +
+      '\n\nINVOICE ' + inv.number + '\nTo: ' + (co?co.name:'') +
+      '\nIssue date: ' + fdate(inv.issueDate) + '\nDue date: ' + fdate(inv.dueDate) +
+      (o&&o.ref?('\nYour reference: '+o.ref):'') +
+      '\n\nItems:\n' + lines +
+      '\n\nTOTAL DUE: ' + fmtMoney(inv.amount) +
+      (biz.bankDetails?('\n\nPayment details:\n'+biz.bankDetails):'') +
+      '\n\n' + (biz.footer||'');
+  },
+  openInvoiceView(id){
+    const inv = invoiceById(id); if(!inv) return;
+    const o = orderById(inv.orderId); const co = companyById(inv.companyId);
+    const biz = store.settings.invoice||{};
+    const bizName = biz.businessName || store.settings.companyName || 'Lakhani Foods Ltd';
+    const st = invStatus(inv);
+    const missingDetails = !biz.address && !biz.bankDetails;
+    this.modal(`
+      <div class="modal wide">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Invoice ${esc(inv.number)} <span class="pill ${st.cls}">${st.txt}</span></h3>
+          <button class="btn ghost small" onclick="App.closeModal()">Close</button>
+        </div>
+        ${missingDetails?'<div class="banner">Your business address and bank details are empty — fill them in under <b>Settings &rarr; Invoice details</b> so invoices look complete.</div>':''}
+        <div id="invoicePrintArea" style="border:1px solid var(--border);border-radius:10px;padding:26px;background:#fff">
+          <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:20px;font-weight:bold;color:var(--green-dark)">${esc(bizName)}</div>
+              <div class="sans" style="font-size:12.5px;color:#555;white-space:pre-wrap">${esc(biz.address||'')}</div>
+              ${biz.vatNo?`<div class="sans" style="font-size:12.5px;color:#555">VAT: ${esc(biz.vatNo)}</div>`:''}
+              ${biz.email?`<div class="sans" style="font-size:12.5px;color:#555">${esc(biz.email)}${biz.phone?' · '+esc(biz.phone):''}</div>`:''}
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:24px;color:var(--green-dark);letter-spacing:1px">INVOICE</div>
+              <div class="sans" style="font-size:13px"><b>${esc(inv.number)}</b></div>
+              <div class="sans" style="font-size:12.5px;color:#555">Issued: ${fdate(inv.issueDate)}</div>
+              <div class="sans" style="font-size:12.5px;color:#555">Due: ${fdate(inv.dueDate)}</div>
+            </div>
+          </div>
+          <div style="margin:18px 0 14px">
+            <div class="sans" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.7px">Bill to</div>
+            <div style="font-weight:bold">${esc(co?co.name:'')}</div>
+            ${co&&co.location?`<div class="sans" style="font-size:12.5px;color:#555">${esc(co.location)}</div>`:''}
+            ${o&&o.ref?`<div class="sans" style="font-size:12.5px;color:#555">Your reference: ${esc(o.ref)}</div>`:''}
+          </div>
+          <table>
+            <thead><tr><th>Item</th><th>Qty</th><th>Unit price</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody>
+            ${(o?o.items:[]).map(l=>{
+              const it = stockItemById(l.itemId);
+              return `<tr><td>${it?esc(it.name):'Item'}</td><td>${l.qty} ${it?esc(it.unit):''}</td>
+                <td>${fmtMoney(l.unitPrice)}</td><td style="text-align:right">${fmtMoney(l.qty*l.unitPrice)}</td></tr>`;
+            }).join('')}
+            <tr><td colspan="3" style="text-align:right;font-weight:bold;border-top:2px solid var(--border)">Total due</td>
+                <td style="text-align:right;font-weight:bold;font-size:16px;border-top:2px solid var(--border)">${fmtMoney(inv.amount)}</td></tr>
+            </tbody>
+          </table>
+          ${biz.bankDetails?`<div style="margin-top:16px"><div class="sans" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.7px">Payment details</div>
+            <div class="sans" style="font-size:12.5px;white-space:pre-wrap">${esc(biz.bankDetails)}</div></div>`:''}
+          ${biz.footer?`<div class="sans" style="margin-top:16px;font-size:12px;color:#777;font-style:italic">${esc(biz.footer)}</div>`:''}
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap">
+          <button class="btn" onclick="App.sendInvoiceEmail('${inv.id}')">&#128231; Send by email</button>
+          <button class="btn ghost" onclick="App.printInvoice()">&#128424;&#65039; Print / Save as PDF</button>
+          <button class="btn ghost" onclick="App.copyInvoiceText('${inv.id}')">Copy as text</button>
+          ${!inv.sentAt?`<button class="btn ghost" onclick="App.markInvoiceSent('${inv.id}')">Mark as sent</button>`:''}
+          ${!inv.paidAt?`<button class="btn amber" onclick="App.markInvoicePaid('${inv.id}')">Mark as paid</button>`:''}
+        </div>
+      </div>`);
+  },
+  printInvoice(){
+    document.body.classList.add('print-inv');
+    const done = ()=>{ document.body.classList.remove('print-inv'); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    window.print();
+    setTimeout(done, 2000);
+  },
+  sendInvoiceEmail(id){
+    const inv = invoiceById(id); if(!inv) return;
+    const o = orderById(inv.orderId);
+    const to = o ? billingEmailFor(o) : '';
+    const biz = store.settings.invoice||{};
+    const bizName = biz.businessName || store.settings.companyName || 'Lakhani Foods Ltd';
+    const subject = encodeURIComponent('Invoice '+inv.number+' from '+bizName+' — '+fmtMoney(inv.amount));
+    const body = encodeURIComponent(this.invoiceText(inv) +
+      '\n\n(For a formatted copy, a PDF version of this invoice is attached / available on request.)');
+    window.location.href = 'mailto:'+encodeURIComponent(to)+'?subject='+subject+'&body='+body;
+    setTimeout(()=>{
+      if(confirm('Your email app should have opened with the invoice pre-filled'+(to?' to '+to:'')+'.\n\nTip: use Print → Save as PDF to attach a formatted copy.\n\nMark '+inv.number+' as SENT?')){
+        this.markInvoiceSent(id);
+      }
+    }, 600);
+  },
+  copyInvoiceText(id){
+    const inv = invoiceById(id); if(!inv) return;
+    const txt = this.invoiceText(inv);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(()=>toast('Invoice copied — paste it into an email or document.'));
+    } else { prompt('Copy the invoice text:', txt); }
+  },
+  markInvoiceSent(id){
+    const inv = invoiceById(id); if(!inv) return;
+    inv.sentAt = new Date().toISOString(); inv.remindAt = null;
+    save(); this.closeModal(); this.go('invoices'); toast(inv.number+' marked as sent.');
+  },
+  markInvoicePaid(id){
+    const inv = invoiceById(id); if(!inv) return;
+    inv.paidAt = new Date().toISOString();
+    if(!inv.sentAt) inv.sentAt = inv.paidAt;
+    save(); this.closeModal(); this.go('invoices'); toast(inv.number+' marked as paid. 🎉');
+  },
+  snoozeReminder(id){
+    const inv = invoiceById(id); if(!inv) return;
+    inv.remindAt = new Date(Date.now()+24*3600e3).toISOString();
+    save(); this.go('invoices'); toast('Reminder snoozed for another 24 hours.');
+  },
+  saveInvoiceSettings(){
+    store.settings.invoice = {
+      businessName: $('#iv_bizname').value.trim(),
+      address: $('#iv_address').value.trim(),
+      email: $('#iv_email').value.trim(),
+      phone: $('#iv_phone').value.trim(),
+      vatNo: $('#iv_vat').value.trim(),
+      termsDays: Number($('#iv_terms').value)||30,
+      bankDetails: $('#iv_bank').value.trim(),
+      footer: $('#iv_footer').value.trim()
+    };
+    save(); toast('Invoice details saved — they appear on every invoice.');
   },
 
   /* =============== BANKING =============== */
@@ -893,7 +1219,16 @@ For each lead give: a realistic company profile of the kind that exists in this 
 
 /* ---------------- Stock helpers ---------------- */
 function stockItemById(id){ return store.stock.items.find(i=>i.id===id); }
-function dealQtyFor(deal, itemId){ return (deal.stockLines||[]).filter(l=>l.itemId===itemId).reduce((s,l)=>s+l.qty,0); }
+/* A deal's stock demand: exact lines if set, otherwise the company's estimated requirement */
+function effectiveLines(deal){
+  if(deal.stockLines && deal.stockLines.length) return {lines:deal.stockLines, estimated:false};
+  if(deal.companyId){
+    const co = companyById(deal.companyId);
+    if(co && co.stockEstimates && co.stockEstimates.length) return {lines:co.stockEstimates, estimated:true};
+  }
+  return {lines:[], estimated:false};
+}
+function dealQtyFor(deal, itemId){ return effectiveLines(deal).lines.filter(l=>l.itemId===itemId).reduce((s,l)=>s+l.qty,0); }
 function stockStats(item){
   const wonDeals  = store.deals.filter(d=>d.status==='won' && !d.fulfilled);
   const openDeals = store.deals.filter(d=>d.status==='open');
@@ -918,6 +1253,14 @@ function dealLineRowHtml(l){
   return `<div class="dl-row" style="display:flex;gap:8px;margin-bottom:7px;align-items:center">
     <select class="dl-item" style="flex:1">${opts}</select>
     <input class="dl-qty" type="number" min="0" placeholder="Qty" value="${l?l.qty:''}" style="width:90px">
+    <button type="button" class="btn small danger" onclick="this.parentElement.remove()">&times;</button></div>`;
+}
+function orderLineRowHtml(l){
+  const opts = store.stock.items.map(it=>`<option value="${it.id}" ${l&&l.itemId===it.id?'selected':''}>${esc(it.name)} (${esc(it.unit)})</option>`).join('');
+  return `<div class="ol-row" style="display:flex;gap:8px;margin-bottom:7px;align-items:center">
+    <select class="ol-item" style="flex:1.4">${opts}</select>
+    <input class="ol-qty" type="number" min="0" placeholder="Qty" value="${l?l.qty:''}" style="width:80px">
+    <input class="ol-price" type="number" min="0" step="0.01" placeholder="Unit price" value="${l&&l.unitPrice!=null?l.unitPrice:''}" style="width:105px">
     <button type="button" class="btn small danger" onclick="this.parentElement.remove()">&times;</button></div>`;
 }
 
@@ -971,6 +1314,12 @@ function renderDashboard(){
     <button class="btn amber" onclick="App.openLeadGen()">&#10024; Ask Claude to generate leads</button>
   </div>
 
+  ${(()=>{ const rem = dueReminders(); if(!rem.length) return '';
+    return `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--amber)">
+      <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px">
+        &#9200; <b>${rem.length} invoice reminder${rem.length===1?'':'s'} due</b> — you asked to be reminded to send
+        ${rem.map(i=>esc(i.number)).join(', ')}. <a class="lnk" onclick="App.go('invoices')">Go to Invoices</a></div>
+    </div>`; })()}
   <div class="grid kpis" style="margin-bottom:16px">
     <div class="card kpi"><div class="lbl">Open pipeline value</div><div class="val">${fmt(s.pipelineValue)}</div><div class="note">${s.open.length} open lead${s.open.length===1?'':'s'}</div></div>
     <div class="card kpi"><div class="lbl">Weighted forecast</div><div class="val">${fmt(s.weighted)}</div><div class="note">value × stage probability</div></div>
@@ -979,6 +1328,14 @@ function renderDashboard(){
     <div class="card kpi"><div class="lbl">New leads this month</div><div class="val">${newThisMonth}</div><div class="note">created in ${monthLabel(nowKey)}</div></div>
     ${bank.connected ? `<div class="card kpi"><div class="lbl">Cash + weighted pipeline</div><div class="val">${fmt(projected)}</div><div class="note">bank ${fmt(bank.balance)} + forecast</div></div>`
       : `<div class="card kpi"><div class="lbl">Bank position</div><div class="val" style="font-size:16px;color:var(--muted)">Not linked</div><div class="note"><a class="lnk" onclick="App.go('banking')">Link your bank</a> to see deal impact</div></div>`}
+    ${store.invoices.length ? (()=>{
+      const out = store.invoices.filter(i=>i.sentAt && !i.paidAt);
+      const total = out.reduce((x,i)=>x+i.amount,0);
+      const od = out.filter(i=>i.dueDate && i.dueDate < todayISO()).length;
+      return `<div class="card kpi"><div class="lbl">Invoices outstanding</div>
+        <div class="val" style="color:${od?'var(--red)':'var(--green-dark)'}">${fmtMoney(total)}</div>
+        <div class="note">${out.length} unpaid${od?' · '+od+' overdue':''} — <a class="lnk" onclick="App.go('invoices')">view</a></div></div>`;
+    })() : ''}
     ${store.stock.items.length ? (()=>{
       const short = store.stock.items.filter(it=>{const s=stockStats(it);return s.projectedAll<0||s.availableNow<0;}).length;
       return short
@@ -1106,11 +1463,11 @@ function renderDealProfile(id){
         <div class="k">Created</div><div>${fdate(d.createdAt)}</div>
         <div class="k">Closed</div><div>${fdate(d.closedAt)}</div>
       </div>
-      ${(d.stockLines&&d.stockLines.length)? `
+      ${(()=>{ const el = effectiveLines(d); if(!el.lines.length) return ''; return `
       <div style="margin-top:18px">
-        <div class="section-title">Stock required ${d.fulfilled?'<span class="pill green">Delivered</span>':''}</div>
+        <div class="section-title">Stock required ${d.fulfilled?'<span class="pill green">Delivered</span>':''} ${el.estimated?'<span class="pill amber">estimated from company</span>':''}</div>
         <table><thead><tr><th>Product</th><th>Qty</th><th>Coverage</th></tr></thead><tbody>
-        ${d.stockLines.map(l=>{
+        ${el.lines.map(l=>{
           const it = stockItemById(l.itemId);
           if(!it) return `<tr><td colspan="3" style="color:var(--muted)">A linked product was deleted.</td></tr>`;
           const s = stockStats(it);
@@ -1123,8 +1480,9 @@ function renderDealProfile(id){
           return `<tr><td>${esc(it.name)}</td><td>${l.qty} ${esc(it.unit)}</td><td>${pill}</td></tr>`;
         }).join('')}
         </tbody></table>
+        ${el.estimated?'<div style="font-size:11.5px;color:var(--muted);font-family:sans-serif;margin-top:6px">Quantities estimated from the company profile — edit the deal to set exact amounts.</div>':''}
         ${(d.status==='won' && !d.fulfilled)? `<button class="btn small" style="margin-top:10px" onclick="App.fulfillDeal('${d.id}')">Mark stock delivered (deduct from on hand)</button>`:''}
-      </div>`:''}
+      </div>`; })()}
       ${store.bank.connected && d.status==='open' ? `
         <div class="banner" style="margin-top:16px;margin-bottom:0">
           <b>Bank impact if this closes:</b> ${fmt(store.bank.balance)} &rarr; <b>${fmt(store.bank.balance + d.value)}</b>
@@ -1286,6 +1644,24 @@ function renderCompanyProfile(id){
       </div>
       ${c.notes?`<div style="margin-top:16px"><div class="section-title">Notes</div>
         <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+      ${(c.stockEstimates&&c.stockEstimates.length)? `
+      <div style="margin-top:18px">
+        <div class="section-title">Estimated stock requirement</div>
+        <table><thead><tr><th>SKU</th><th>Est. qty</th><th>Coverage today</th></tr></thead><tbody>
+        ${c.stockEstimates.map(l=>{
+          const it = stockItemById(l.itemId);
+          if(!it) return '';
+          const s = stockStats(it);
+          let pill;
+          if(s.availableNow >= l.qty) pill = '<span class="pill green">in stock</span>';
+          else if(s.availableNow + s.incoming >= l.qty) pill = '<span class="pill amber">after deliveries</span>';
+          else pill = '<span class="pill red">shortfall</span>';
+          return `<tr><td>${esc(it.name)}</td><td>${l.qty} ${esc(it.unit)}</td><td>${pill}</td></tr>`;
+        }).join('')}
+        </tbody></table>
+        <div style="font-size:11.5px;color:var(--muted);font-family:sans-serif;margin-top:6px">
+          Used to forecast demand on this company's deals until exact quantities are set.</div>
+      </div>`:''}
       <div style="margin-top:18px">
         <div class="section-title">People here</div>
         ${contacts.length? contacts.map(x=>`
@@ -1307,6 +1683,21 @@ function renderCompanyProfile(id){
           <td>${fdate(d.createdAt)}</td></tr>`).join('')}</tbody></table>`
       : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No deals with this company yet.</div>'}
       <button class="btn small ghost" style="margin-top:14px" onclick="App.openDealForm()">+ New lead</button>
+
+      <div class="section-title" style="margin-top:22px">Order history</div>
+      ${(()=>{
+        const orders = store.orders.filter(o=>o.companyId===c.id).sort((a,b)=>(b.orderDate||'').localeCompare(a.orderDate||''));
+        if(!orders.length) return '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No orders from this company yet.</div>';
+        return `<table><thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Status</th><th>Invoice</th></tr></thead><tbody>
+          ${orders.map(o=>{
+            const inv = invoiceForOrder(o.id); const st = inv?invStatus(inv):null;
+            return `<tr><td><b>${esc(o.ref)||'Order'}</b></td><td>${fdate(o.orderDate)}</td>
+              <td>${fmtMoney(orderTotal(o))}</td>
+              <td>${o.status==='fulfilled'?'<span class="pill green">Delivered</span>':'<span class="pill blue">Confirmed</span>'}</td>
+              <td>${inv?`<a class="lnk" onclick="App.openInvoiceView('${inv.id}')">${esc(inv.number)}</a> <span class="pill ${st.cls}">${st.txt}</span>`:'—'}</td></tr>`;
+          }).join('')}</tbody></table>`;
+      })()}
+      <button class="btn small ghost" style="margin-top:14px" onclick="App.openOrderForm(null,'${c.id}')">+ New order for ${esc(c.name)}</button>
     </div>
   </div>`;
 }
@@ -1512,6 +1903,137 @@ function renderStock(){
   </div>`;
 }
 
+/* ---------------- Orders ---------------- */
+function renderOrders(){
+  const orders = store.orders.slice().sort((a,b)=>(b.orderDate||'').localeCompare(a.orderDate||''));
+  const nowKey = monthKey(new Date().toISOString());
+  const monthValue = orders.filter(o=>o.orderDate && monthKey(o.orderDate)===nowKey).reduce((s,o)=>s+orderTotal(o),0);
+  const awaiting = orders.filter(o=>o.status!=='fulfilled').length;
+
+  return `
+  <div class="page-head">
+    <div><h2>Orders</h2>
+    <div class="sub">Confirmed orders from your customers. Saving a new order drafts its invoice automatically.</div></div>
+    <button class="btn" onclick="App.openOrderForm()">+ New confirmed order</button>
+  </div>
+
+  ${orders.length? `
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Orders total</div><div class="val">${orders.length}</div></div>
+    <div class="card kpi"><div class="lbl">Ordered this month</div><div class="val">${fmtMoney(monthValue)}</div></div>
+    <div class="card kpi"><div class="lbl">Awaiting delivery</div><div class="val">${awaiting}</div><div class="note">mark fulfilled to deduct stock</div></div>
+  </div>
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Order</th><th>Company</th><th>Items</th><th>Total</th><th>Delivery</th><th>Status</th><th>Invoice</th><th></th></tr></thead>
+      <tbody>${orders.map(o=>{
+        const co = companyById(o.companyId);
+        const inv = invoiceForOrder(o.id);
+        const st = inv ? invStatus(inv) : null;
+        const itemsSummary = o.items.map(l=>{const it=stockItemById(l.itemId);return l.qty+'× '+(it?it.name:'?');}).join(', ');
+        return `<tr>
+          <td><b>${esc(o.ref)||'Order'}</b><div style="font-size:11.5px;color:var(--muted)">${fdate(o.orderDate)}</div></td>
+          <td>${co?`<a class="lnk" onclick="App.go('company','${co.id}')">${esc(co.name)}</a>`:'—'}</td>
+          <td style="max-width:220px">${esc(itemsSummary)}</td>
+          <td><b>${fmtMoney(orderTotal(o))}</b></td>
+          <td>${fdate(o.deliveryDate)}</td>
+          <td>${o.status==='fulfilled'?'<span class="pill green">Delivered</span>':'<span class="pill blue">Confirmed</span>'}</td>
+          <td>${inv?`<a class="lnk" onclick="App.openInvoiceView('${inv.id}')">${esc(inv.number)}</a> <span class="pill ${st.cls}">${st.txt}</span>`:'—'}</td>
+          <td style="text-align:right;white-space:nowrap">
+            ${o.status!=='fulfilled'?`<button class="btn small" onclick="App.fulfillOrder('${o.id}')">Fulfil</button>`:''}
+            <button class="btn small ghost" onclick="App.openOrderForm('${o.id}')">Edit</button>
+          </td></tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`
+  : `<div class="card empty">
+      <div class="big">&#128203;</div>
+      <p><b>No orders yet.</b></p>
+      <p style="margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto">
+        When a customer confirms an order, record it here. The CRM drafts the invoice immediately and
+        offers to send it or remind you in 24 hours. Orders also appear on the company's profile.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.openOrderForm()">+ Add your first order</button>
+    </div>`}
+  `;
+}
+
+/* ---------------- Invoices ---------------- */
+function renderInvoices(){
+  const invs = store.invoices.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const reminders = dueReminders();
+  const unsent = invs.filter(i=>!i.sentAt && !i.paidAt);
+  const outstanding = invs.filter(i=>i.sentAt && !i.paidAt);
+  const overdue = outstanding.filter(i=>i.dueDate && i.dueDate < todayISO());
+  const upcoming = outstanding.filter(i=>i.dueDate && i.dueDate >= todayISO() && i.dueDate <= addDaysISO(todayISO(),7));
+  const outstandingTotal = outstanding.reduce((s,i)=>s+i.amount,0);
+  const overdueTotal = overdue.reduce((s,i)=>s+i.amount,0);
+  const nowKey = monthKey(new Date().toISOString());
+  const paidThisMonth = invs.filter(i=>i.paidAt && monthKey(i.paidAt)===nowKey).reduce((s,i)=>s+i.amount,0);
+
+  return `
+  <div class="page-head">
+    <div><h2>Invoices</h2>
+    <div class="sub">Everything upcoming, due and outstanding. Invoices are created automatically when you save an order.</div></div>
+  </div>
+
+  ${reminders.length? `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--amber)">
+    <div class="section-title" style="color:#8a5313">&#9200; Reminders due</div>
+    ${reminders.map(i=>{
+      const co = companyById(i.companyId);
+      return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:'Segoe UI',sans-serif;font-size:13.5px;margin-bottom:9px">
+        <span>You asked to be reminded to send <b>${esc(i.number)}</b> (${fmtMoney(i.amount)}) to <b>${esc(co?co.name:'')}</b>.</span>
+        <button class="btn small" onclick="App.openInvoiceView('${i.id}')">Send now</button>
+        <button class="btn small ghost" onclick="App.snoozeReminder('${i.id}')">Snooze 24h</button>
+      </div>`;
+    }).join('')}
+  </div>`:''}
+
+  ${invs.length? `
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Outstanding (sent, unpaid)</div><div class="val">${fmtMoney(outstandingTotal)}</div><div class="note">${outstanding.length} invoice${outstanding.length===1?'':'s'}</div></div>
+    <div class="card kpi"><div class="lbl">Overdue</div><div class="val" style="color:${overdue.length?'var(--red)':'var(--green-dark)'}">${fmtMoney(overdueTotal)}</div><div class="note">${overdue.length} past due date</div></div>
+    <div class="card kpi"><div class="lbl">Due in next 7 days</div><div class="val">${upcoming.length}</div></div>
+    <div class="card kpi"><div class="lbl">Awaiting sending</div><div class="val" style="color:${unsent.length?'var(--amber)':'var(--green-dark)'}">${unsent.length}</div></div>
+    <div class="card kpi"><div class="lbl">Paid this month</div><div class="val">${fmtMoney(paidThisMonth)}</div></div>
+  </div>
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Invoice</th><th>Order</th><th>Company</th><th>Amount</th><th>Issued</th><th>Due</th><th>Status</th><th></th></tr></thead>
+      <tbody>${invs.map(i=>{
+        const co = companyById(i.companyId);
+        const o = orderById(i.orderId);
+        const st = invStatus(i);
+        return `<tr>
+          <td><b>${esc(i.number)}</b></td>
+          <td>${o?esc(o.ref||'Order'):'—'}</td>
+          <td>${co?`<a class="lnk" onclick="App.go('company','${co.id}')">${esc(co.name)}</a>`:'—'}</td>
+          <td><b>${fmtMoney(i.amount)}</b></td>
+          <td>${fdate(i.issueDate)}</td>
+          <td>${fdate(i.dueDate)}</td>
+          <td><span class="pill ${st.cls}">${st.txt}</span></td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn small" onclick="App.openInvoiceView('${i.id}')">View / send</button>
+            ${(!i.paidAt && i.sentAt)?`<button class="btn small ghost" onclick="App.markInvoicePaid('${i.id}')">Mark paid</button>`:''}
+          </td></tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`
+  : `<div class="card empty">
+      <div class="big">&#129534;</div>
+      <p><b>No invoices yet.</b></p>
+      <p style="margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto">
+        Invoices are drafted automatically when you save a confirmed order in the <b>Orders</b> tab —
+        you'll be offered the choice to send straight away or be reminded in 24 hours.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.go('orders')">Go to Orders</button>
+    </div>`}
+  <div class="banner" style="margin-top:16px">
+    <b>How sending works:</b> "Send by email" opens your email app (e.g. Outlook) with the invoice pre-filled —
+    press Send there. Use <b>Print &rarr; Save as PDF</b> to attach a formatted copy. When a customer pays,
+    hit <b>Mark paid</b> so your outstanding figures stay accurate. Set your business details under
+    <b>Settings &rarr; Invoice details</b>.
+  </div>`;
+}
+
 /* ---------------- Settings ---------------- */
 function renderSettings(){
   const a = getAuth();
@@ -1550,6 +2072,30 @@ function renderSettings(){
         <input type="password" id="st_key" value="${esc(store.settings.apiKey)}" placeholder="sk-ant-...">
         <div class="hint">Stored only in this browser's local storage. Used for the "Ask Claude to generate leads" button. Keys can be created at console.anthropic.com.</div></div>
       <button class="btn" onclick="App.saveApiKey()">Save key</button>
+    </div>
+
+    <div class="card" style="grid-column:1/-1">
+      <div class="section-title">Invoice details</div>
+      <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
+        These appear on every invoice you create. Fill them in when ready — invoices work without them but look better complete.</p>
+      ${(()=>{const iv = store.settings.invoice||{}; return `
+      <div class="f2">
+        <div class="frow"><label>Business name (on invoices)</label><input id="iv_bizname" placeholder="${esc(store.settings.companyName)}" value="${esc(iv.businessName)}"></div>
+        <div class="frow"><label>Invoice email (your sending address)</label><input id="iv_email" placeholder="e.g. accounts@lakhanifoods.co.uk" value="${esc(iv.email)}"></div>
+      </div>
+      <div class="f2">
+        <div class="frow"><label>Phone</label><input id="iv_phone" value="${esc(iv.phone)}"></div>
+        <div class="frow"><label>VAT number</label><input id="iv_vat" value="${esc(iv.vatNo)}"></div>
+      </div>
+      <div class="f2">
+        <div class="frow"><label>Business address</label><textarea id="iv_address" placeholder="Street&#10;City&#10;Postcode">${esc(iv.address)}</textarea></div>
+        <div class="frow"><label>Payment / bank details</label><textarea id="iv_bank" placeholder="Account name&#10;Sort code · Account number">${esc(iv.bankDetails)}</textarea></div>
+      </div>
+      <div class="f2">
+        <div class="frow"><label>Payment terms (days until due)</label><input id="iv_terms" type="number" min="0" value="${iv.termsDays!=null?iv.termsDays:30}"></div>
+        <div class="frow"><label>Invoice footer note</label><input id="iv_footer" value="${esc(iv.footer)}"></div>
+      </div>
+      <button class="btn" onclick="App.saveInvoiceSettings()">Save invoice details</button>`;})()}
     </div>
 
     <div class="card">

@@ -1,5 +1,5 @@
 /* Lakhani Foods CRM — service worker: offline support for the installed app */
-const CACHE = 'lfcrm-v2';
+const CACHE = 'lfcrm-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
