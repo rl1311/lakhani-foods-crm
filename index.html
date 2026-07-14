@@ -164,6 +164,8 @@
     <button class="nav-btn" data-view="banking"   onclick="App.go('banking')"><span class="ico">&#127974;</span> Banking</button>
     <button class="nav-btn" data-view="settings"  onclick="App.go('settings')"><span class="ico">&#9881;&#65039;</span> Settings</button>
     <div class="side-bottom">
+      <button class="nav-btn" id="syncbtn" onclick="doSync()" style="padding-left:0"><span class="ico">&#10227;</span> Sync now</button>
+      <div id="syncstatus" style="font-size:11px;color:#9fc0ac;padding:2px 0 8px 31px;font-family:'Segoe UI',sans-serif"></div>
       <button class="nav-btn" onclick="App.lock()" style="padding-left:0"><span class="ico">&#128274;</span> Lock</button>
     </div>
   </aside>
@@ -183,14 +185,18 @@
 const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
 const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
 const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
+const SYNC_TOKEN_KEY = 'lfcrm_sync_token', LAST_SYNC_KEY = 'lfcrm_last_sync', DEVICE_KEY = 'lfcrm_device_id';
+const DATA_API = 'https://api.github.com/repos/rl1311/lakhani-foods-data/contents/';
+const VAPID_PUBLIC = 'BFQ01jvwMThpXvuEY7rYqOt2DiyBh00c5Usp6XXMYZYYydSdrYfJQK35jR6GhSe7k5dL7ns92QtvroL712V84JI';
 
 /* ---------------- storage ---------------- */
 function freshData(){
   return {
     contacts:[], companies:[], deals:[], orders:[], invoices:[],
     stock:{items:[], incoming:[]},
-    bank:{connected:false, bankName:'', balance:0, transactions:[]},
+    bank:{connected:false, bankName:'', balance:0, transactions:[], updatedAt:0},
     counters:{invoice:0},
+    push:[], deleted:[], settingsUpdatedAt:0,
     settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:'',
       invoice:{businessName:'', address:'', email:'', phone:'', vatNo:'', termsDays:30, bankDetails:'', footer:'Thank you for your business.'}}
   };
@@ -207,7 +213,47 @@ function loadStore(){
       settings:{...f.settings, ...(d.settings||{}), invoice:{...f.settings.invoice, ...((d.settings||{}).invoice||{})}}};
   }catch(e){ return freshData(); }
 }
-function save(){ localStorage.setItem(DATA_KEY, JSON.stringify(store)); }
+/* Change-stamping: every save diffs each record against the last snapshot and
+   stamps updatedAt on anything that changed — that's what drives newest-wins sync. */
+let _prevSnap = null;
+function _snapOf(x){ const c = {...x}; delete c.updatedAt; return JSON.stringify(c); }
+function _collections(){
+  return {ct:store.contacts, co:store.companies, dl:store.deals, or:store.orders,
+    iv:store.invoices, si:store.stock.items, sn:store.stock.incoming, pu:store.push||[]};
+}
+function primeSnapshots(){
+  _prevSnap = {};
+  for(const [n, arr] of Object.entries(_collections()))
+    (arr||[]).forEach(x=>{ if(x.id) _prevSnap[n+':'+x.id] = _snapOf(x); });
+  _prevSnap['bank'] = JSON.stringify({c:store.bank.connected, n:store.bank.bankName, b:store.bank.balance});
+  _prevSnap['set']  = JSON.stringify({n:store.settings.companyName, c:store.settings.currency, i:store.settings.invoice});
+}
+function stampChanges(){
+  if(_prevSnap === null){ primeSnapshots(); return; }
+  const now = Date.now();
+  for(const [n, arr] of Object.entries(_collections())){
+    (arr||[]).forEach(x=>{
+      if(!x.id) return;
+      const k = n+':'+x.id, s = _snapOf(x);
+      if(_prevSnap[k] !== s){ x.updatedAt = now; _prevSnap[k] = s; }
+    });
+  }
+  const bs = JSON.stringify({c:store.bank.connected, n:store.bank.bankName, b:store.bank.balance});
+  if(_prevSnap['bank'] !== bs){ store.bank.updatedAt = now; _prevSnap['bank'] = bs; }
+  const ss = JSON.stringify({n:store.settings.companyName, c:store.settings.currency, i:store.settings.invoice});
+  if(_prevSnap['set'] !== ss){ store.settingsUpdatedAt = now; _prevSnap['set'] = ss; }
+}
+function markDeleted(id){
+  if(!id) return;
+  store.deleted = store.deleted || [];
+  store.deleted.push({id, at:Date.now()});
+  if(store.deleted.length > 800) store.deleted = store.deleted.slice(-800);
+}
+function save(fromSync){
+  if(!fromSync) stampChanges();
+  localStorage.setItem(DATA_KEY, JSON.stringify(store));
+  if(!fromSync) scheduleAutoSync();
+}
 
 /* ---------------- helpers ---------------- */
 const $ = s => document.querySelector(s);
@@ -267,6 +313,189 @@ async function sha256(text){
   // fallback (non-crypto env): simple hash
   let h = 0; for(let i=0;i<text.length;i++){ h = Math.imul(31,h) + text.charCodeAt(i) | 0; }
   return 'fb'+h.toString(16);
+}
+
+/* =====================================================================
+   SYNC — shared data in a private GitHub repo (contents API), lodge-style:
+   newest-updatedAt-wins per record, tombstones stop deletions resurrecting.
+   ===================================================================== */
+function b64encode(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64decode(s){ return decodeURIComponent(escape(atob(String(s).replace(/\n/g,'')))); }
+function syncToken(){ return localStorage.getItem(SYNC_TOKEN_KEY) || ''; }
+
+let syncCfg = null;   // optional sync-config.json (encrypted token, unlocked by passphrase)
+async function loadSyncCfg(){
+  try{ syncCfg = await (await fetch('./sync-config.json?v='+Date.now())).json(); }
+  catch(e){ syncCfg = {configured:false}; }
+}
+async function decryptSyncToken(passphrase){
+  if(!syncCfg || !syncCfg.configured) return null;
+  try{
+    const enc = new TextEncoder();
+    const salt = Uint8Array.from(atob(syncCfg.salt), c=>c.charCodeAt(0));
+    const iv   = Uint8Array.from(atob(syncCfg.iv),   c=>c.charCodeAt(0));
+    const ct   = Uint8Array.from(atob(syncCfg.ct),   c=>c.charCodeAt(0));
+    const base = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    const key  = await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:150000, hash:'SHA-256'},
+                   base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct);
+    return new TextDecoder().decode(pt);
+  }catch(e){ return null; }
+}
+
+function ghHeaders(){ return {'Authorization':'token '+syncToken(), 'Accept':'application/vnd.github+json'}; }
+async function ghGet(path){
+  const r = await fetch(DATA_API+path+'?ref=main&t='+Date.now(), {headers:ghHeaders(), cache:'no-store'});
+  if(r.status===404) return null;
+  if(r.status===401 || r.status===403) throw new Error('sync token was rejected — check it in Settings');
+  if(!r.ok) throw new Error('GitHub read failed ('+r.status+')');
+  return r.json();
+}
+async function ghPut(path, contentB64, message, sha){
+  const body = {message, content:contentB64, branch:'main'};
+  if(sha) body.sha = sha;
+  const r = await fetch(DATA_API+path, {method:'PUT', headers:ghHeaders(), body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('GitHub write failed ('+r.status+')');
+  return r.json();
+}
+
+/* ---- merge: newest updatedAt wins per record; tombstones filter deletions ---- */
+function mergeById(a, b, keyFn){
+  keyFn = keyFn || (x=>x.id);
+  const map = new Map();
+  (a||[]).forEach(x=>map.set(keyFn(x), x));
+  (b||[]).forEach(x=>{ const k=keyFn(x), cur=map.get(k);
+    if(!cur || (x.updatedAt||0) > (cur.updatedAt||0)) map.set(k, x); });
+  return [...map.values()];
+}
+function txKey(t){ return t.id || ((t.date||'')+'|'+(t.desc||'')+'|'+t.amount); }
+function buildPayload(){
+  return {
+    contacts:store.contacts, companies:store.companies, deals:store.deals,
+    orders:store.orders, invoices:store.invoices,
+    stock:{items:store.stock.items, incoming:store.stock.incoming},
+    bank:store.bank, counters:store.counters,
+    settingsShared:{companyName:store.settings.companyName, currency:store.settings.currency, invoice:store.settings.invoice},
+    settingsUpdatedAt:store.settingsUpdatedAt||0,
+    push:store.push||[], deleted:store.deleted||[]
+  };
+}
+function mergePayloads(r, l){
+  if(!r) return l;
+  const delMap = new Map();
+  (r.deleted||[]).concat(l.deleted||[]).forEach(d=>delMap.set(d.id, d));
+  const del = [...delMap.values()].sort((a,b)=>a.at-b.at).slice(-800);
+  const delSet = new Set(del.map(d=>d.id));
+  const alive = arr => (arr||[]).filter(x=>!delSet.has(x.id));
+  const out = {};
+  out.contacts  = alive(mergeById(r.contacts,  l.contacts));
+  out.companies = alive(mergeById(r.companies, l.companies));
+  out.deals     = alive(mergeById(r.deals,     l.deals));
+  out.orders    = alive(mergeById(r.orders,    l.orders));
+  out.invoices  = alive(mergeById(r.invoices,  l.invoices));
+  out.stock = {
+    items:    alive(mergeById((r.stock||{}).items,    (l.stock||{}).items)),
+    incoming: alive(mergeById((r.stock||{}).incoming, (l.stock||{}).incoming))
+  };
+  const rb = r.bank||{}, lb = l.bank||{};
+  const bankScal = (rb.updatedAt||0) >= (lb.updatedAt||0) ? rb : lb;
+  out.bank = {...bankScal,
+    transactions: mergeById(rb.transactions, lb.transactions, txKey)
+      .filter(t=>!delSet.has(txKey(t)))
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''))};
+  out.counters = {invoice: Math.max((r.counters||{}).invoice||0, (l.counters||{}).invoice||0)};
+  if((r.settingsUpdatedAt||0) >= (l.settingsUpdatedAt||0)){
+    out.settingsShared = r.settingsShared || l.settingsShared; out.settingsUpdatedAt = r.settingsUpdatedAt||0;
+  } else { out.settingsShared = l.settingsShared; out.settingsUpdatedAt = l.settingsUpdatedAt||0; }
+  out.push = mergeById(r.push, l.push);
+  out.deleted = del;
+  return out;
+}
+function applyPayload(p){
+  store.contacts = p.contacts||[]; store.companies = p.companies||[]; store.deals = p.deals||[];
+  store.orders = p.orders||[]; store.invoices = p.invoices||[];
+  store.stock = {items:(p.stock||{}).items||[], incoming:(p.stock||{}).incoming||[]};
+  store.bank = {...freshData().bank, ...(p.bank||{})};
+  store.counters = {...store.counters, ...(p.counters||{})};
+  const ss = p.settingsShared||{};
+  store.settings = {...store.settings,
+    companyName:ss.companyName||store.settings.companyName,
+    currency:ss.currency||store.settings.currency,
+    invoice:{...store.settings.invoice, ...(ss.invoice||{})}};
+  store.settingsUpdatedAt = p.settingsUpdatedAt||0;
+  store.push = p.push||[]; store.deleted = p.deleted||[];
+  primeSnapshots();   // merge results must not be re-stamped as local edits
+}
+
+/* which record ids should wake the push sender ([notify] commit flag) */
+function notifyIds(p){
+  const ids = new Set(); if(!p) return ids;
+  (p.orders||[]).forEach(o=>ids.add('o'+o.id));
+  (p.invoices||[]).forEach(i=>ids.add('i'+i.id));
+  (p.deals||[]).forEach(d=>{ if(d.status==='won') ids.add('w'+d.id); });
+  return ids;
+}
+function hasNewNotifiable(remote, merged){
+  const before = notifyIds(remote);
+  for(const id of notifyIds(merged)) if(!before.has(id)) return true;
+  return false;
+}
+
+let syncing = false, _syncQueued = null;
+function scheduleAutoSync(){
+  if(!syncToken() || syncing) return;
+  clearTimeout(_syncQueued);
+  _syncQueued = setTimeout(()=>doSync(true), 8000);   // push changes shortly after you stop editing
+}
+async function doSync(silent){
+  if(syncing) return;
+  if(!syncToken()){
+    if(silent !== true) toast('Sync isn\'t connected on this device yet — see Settings → Sync.', true);
+    return;
+  }
+  syncing = true; updateSyncUi(true);
+  try{
+    const file = await ghGet('data.json');
+    let remote = null;
+    if(file){ try{ remote = JSON.parse(b64decode(file.content)); }catch(e){} }
+    const merged = mergePayloads(remote, buildPayload());
+    const mergedText = JSON.stringify(merged);
+    if(mergedText !== (remote ? JSON.stringify(remote) : null)){
+      const flag = hasNewNotifiable(remote, merged) ? ' [notify]' : '';
+      await ghPut('data.json', b64encode(mergedText), 'CRM sync'+flag, file ? file.sha : undefined);
+    }
+    applyPayload(merged); save(true);
+    localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
+    if(silent !== true) toast('Synced — this device now has the latest data.');
+  }catch(e){
+    if(silent !== true) toast('Sync failed: '+e.message+'. Check your connection and try again.', true);
+  }finally{
+    syncing = false; updateSyncUi(false);
+    // refresh the screen unless the user is mid-modal
+    const appEl = document.querySelector('#app');
+    if(appEl && !appEl.classList.contains('hidden') && !document.querySelector('#modalRoot').innerHTML){
+      App.go(App.view, App.param);
+    }
+  }
+}
+function updateSyncUi(busy){
+  const b = document.querySelector('#syncbtn');
+  if(b){ b.disabled = busy; b.innerHTML = busy ? '<span class="ico">&#8987;</span> Syncing…' : '<span class="ico">&#10227;</span> Sync now'; }
+  const s = document.querySelector('#syncstatus');
+  if(s) s.textContent = lastSyncText();
+}
+function lastSyncText(){
+  if(!syncToken()) return 'Sync not connected';
+  const t = Number(localStorage.getItem(LAST_SYNC_KEY)||0);
+  if(!t) return 'Not synced yet';
+  const d = new Date(t), today = new Date();
+  return 'Synced '+(d.toDateString()===today.toDateString()
+    ? d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
+    : d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
+}
+function autoSync(){
+  if(Date.now() - Number(localStorage.getItem(LAST_SYNC_KEY)||0) < 60000) return;  // min 60s apart
+  doSync(true);
 }
 
 /* =====================================================================
@@ -382,6 +611,7 @@ const App = {
     }[view] || renderDashboard;
     $('#main').innerHTML = r();
     if(view==='pipeline') wireDragDrop();
+    updateSyncUi(syncing);
   },
 
   /* ---- modal helpers ---- */
@@ -432,6 +662,7 @@ const App = {
   },
   deleteContact(id){
     if(!confirm('Delete this contact? Deals referencing them will keep running without a contact.')) return;
+    markDeleted(id);
     store.contacts = store.contacts.filter(c=>c.id!==id);
     store.deals.forEach(d=>{ if(d.contactId===id) d.contactId=null; });
     save(); this.closeModal(); this.go('contacts'); toast('Contact deleted.');
@@ -481,6 +712,7 @@ const App = {
   },
   deleteCompany(id){
     if(!confirm('Delete this company? Its contacts and deals will be unlinked, not deleted.')) return;
+    markDeleted(id);
     store.companies = store.companies.filter(c=>c.id!==id);
     store.contacts.forEach(c=>{ if(c.companyId===id) c.companyId=null; });
     store.deals.forEach(d=>{ if(d.companyId===id) d.companyId=null; });
@@ -553,6 +785,7 @@ const App = {
   },
   deleteDeal(id){
     if(!confirm('Delete this lead permanently?')) return;
+    markDeleted(id);
     store.deals = store.deals.filter(d=>d.id!==id);
     save(); this.closeModal(); this.go('pipeline'); toast('Lead deleted.');
   },
@@ -639,6 +872,8 @@ const App = {
   },
   deleteStockItem(id){
     if(!confirm('Delete this product? It will be removed from deals and incoming deliveries too.')) return;
+    markDeleted(id);
+    store.stock.incoming.filter(o=>o.itemId===id).forEach(o=>markDeleted(o.id));
     store.stock.items = store.stock.items.filter(i=>i.id!==id);
     store.stock.incoming = store.stock.incoming.filter(o=>o.itemId!==id);
     store.deals.forEach(d=>{ if(d.stockLines) d.stockLines = d.stockLines.filter(l=>l.itemId!==id); });
@@ -679,6 +914,7 @@ const App = {
   },
   deleteIncoming(id){
     if(!confirm('Remove this incoming delivery?')) return;
+    markDeleted(id);
     store.stock.incoming = store.stock.incoming.filter(o=>o.id!==id);
     save(); this.go('stock'); toast('Delivery removed.');
   },
@@ -753,6 +989,8 @@ const App = {
   deleteOrder(id){
     const inv = invoiceForOrder(id);
     if(!confirm('Delete this order'+(inv?' and its invoice '+inv.number:'')+'?')) return;
+    markDeleted(id);
+    if(inv) markDeleted(inv.id);
     store.orders = store.orders.filter(o=>o.id!==id);
     store.invoices = store.invoices.filter(i=>i.orderId!==id);
     save(); this.closeModal(); this.go('orders'); toast('Order deleted.');
@@ -949,6 +1187,52 @@ const App = {
     save(); toast('Invoice details saved — they appear on every invoice.');
   },
 
+  /* =============== SYNC & NOTIFICATIONS =============== */
+  saveSyncToken(){
+    const t = $('#sy_token').value.trim();
+    if(!t){ toast('Paste the sync token first.', true); return; }
+    localStorage.setItem(SYNC_TOKEN_KEY, t);
+    this.go('settings'); toast('Sync connected — running first sync…');
+    doSync(true);
+  },
+  async unlockSync(){
+    const pass = $('#sy_pass').value;
+    if(!pass){ toast('Enter the sync passphrase.', true); return; }
+    const tok = await decryptSyncToken(pass);
+    if(!tok){ toast('That passphrase is not right — try again.', true); return; }
+    localStorage.setItem(SYNC_TOKEN_KEY, tok);
+    this.go('settings'); toast('Sync unlocked on this device — running first sync…');
+    doSync(true);
+  },
+  disconnectSync(){
+    if(!confirm('Disconnect sync on this device? Data stays here but stops updating between devices.')) return;
+    localStorage.removeItem(SYNC_TOKEN_KEY);
+    localStorage.removeItem(LAST_SYNC_KEY);
+    this.go('settings'); updateSyncUi(false); toast('Sync disconnected on this device.');
+  },
+  async enablePush(){
+    try{
+      if(!('Notification' in window) || !('PushManager' in window)){
+        toast('Push isn\'t supported in this browser. On iPhone, install the app to your Home Screen first.', true); return;
+      }
+      const perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ this.go('settings'); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({userVisibleOnly:true,
+        applicationServerKey:(b64=>{const pad='='.repeat((4-b64.length%4)%4);
+          const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));
+          return Uint8Array.from(raw, c=>c.charCodeAt(0));})(VAPID_PUBLIC)});
+      let did = localStorage.getItem(DEVICE_KEY);
+      if(!did){ did = uid(); localStorage.setItem(DEVICE_KEY, did); }
+      store.push = store.push||[];
+      const label = /Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Phone' : 'Laptop';
+      const rec = {id:did, name:label, sub:sub.toJSON(), updatedAt:Date.now()};
+      const existing = store.push.find(x=>x.id===did);
+      if(existing) Object.assign(existing, rec); else store.push.push(rec);
+      save(); this.go('settings'); toast('Notifications enabled on this device.'); doSync(true);
+    }catch(e){ toast('Could not enable notifications: '+e.message, true); }
+  },
+
   /* =============== BANKING =============== */
   openBankLink(){
     this.modal(`
@@ -997,7 +1281,9 @@ const App = {
   },
   unlinkBank(){
     if(!confirm('Unlink bank account and remove imported transactions?')) return;
-    store.bank = freshData().bank; save(); this.go('banking'); toast('Bank account unlinked.');
+    (store.bank.transactions||[]).forEach(t=>markDeleted(txKey(t)));
+    store.bank = {...freshData().bank, updatedAt:Date.now()};
+    save(); this.go('banking'); toast('Bank account unlinked.');
   },
 
   /* =============== CLAUDE LEAD GENERATION =============== */
@@ -1207,9 +1493,14 @@ For each lead give: a realistic company profile of the kind that exists in this 
     }catch(e){ toast('That file is not a valid CRM backup.', true); }
   },
   clearAll(){
-    if(!confirm('Delete ALL CRM data (contacts, companies, leads, bank data)? This cannot be undone.')) return;
+    if(!confirm('Delete ALL CRM data (contacts, companies, leads, orders, invoices, stock, bank data)? If sync is connected this clears the shared store too, on every device. This cannot be undone.')) return;
     if(!confirm('Are you absolutely sure?')) return;
-    store = freshData(); save(); this.go('dashboard'); toast('All data cleared.');
+    // tombstone everything so the wipe propagates through sync instead of resurrecting
+    Object.values(_collections()).forEach(arr=>(arr||[]).forEach(x=>{ if(x.id) markDeleted(x.id); }));
+    (store.bank.transactions||[]).forEach(t=>markDeleted(txKey(t)));
+    const del = store.deleted;
+    store = freshData(); store.deleted = del;
+    save(); this.go('dashboard'); toast('All data cleared.');
   }
 };
 
@@ -1787,7 +2078,7 @@ function parseCsvTransactions(text){
     const dateRaw = parts[0];
     const d = new Date(dateRaw);
     const date = isNaN(d.getTime()) ? null : d.toISOString();
-    out.push({date, desc: parts.slice(1,-1).join(', ') || 'Transaction', amount});
+    out.push({id:uid(), date, desc: parts.slice(1,-1).join(', ') || 'Transaction', amount});
   });
   return out.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
 }
@@ -2074,6 +2365,50 @@ function renderSettings(){
       <button class="btn" onclick="App.saveApiKey()">Save key</button>
     </div>
 
+    <div class="card">
+      <div class="section-title">Sync between devices</div>
+      <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
+        Your data syncs through a private GitHub repository — automatically on opening, when you come back
+        to the app, and every few minutes. The ⟳ Sync button in the sidebar runs it any time.</p>
+      ${(()=>{
+        if(syncToken()) return `
+          <p style="font-family:'Segoe UI',sans-serif;font-size:13.5px;color:var(--green-dark)"><b>&#10003; Sync is active on this device.</b> ${lastSyncText()}.</p>
+          <div style="display:flex;gap:9px;margin-top:10px">
+            <button class="btn" onclick="doSync()">Sync now</button>
+            <button class="btn ghost" onclick="App.disconnectSync()">Disconnect this device</button>
+          </div>`;
+        if(syncCfg && syncCfg.configured) return `
+          <div class="frow"><label>Sync passphrase</label>
+            <input type="password" id="sy_pass" placeholder="Enter the sync passphrase" onkeydown="if(event.key==='Enter')App.unlockSync()">
+            <div class="hint">One-time step on each device — unlocks the encrypted sync key built into the app.</div></div>
+          <button class="btn" onclick="App.unlockSync()">Unlock sync</button>`;
+        return `
+          <div class="frow"><label>Sync token</label>
+            <input type="password" id="sy_token" placeholder="github_pat_…">
+            <div class="hint">A GitHub fine-grained token for the private data store (repo <b>lakhani-foods-data</b>,
+            Contents read &amp; write). Paste it once on each device.</div></div>
+          <button class="btn" onclick="App.saveSyncToken()">Connect sync</button>`;
+      })()}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Device notifications</div>
+      <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
+        Get a pop-up on this device — even with the app closed — for new orders, won deals and
+        invoice reminders that are due.</p>
+      ${(()=>{
+        if(!('Notification' in window) || !('PushManager' in window))
+          return '<p style="font-family:sans-serif;font-size:12.5px;color:var(--muted)">Not supported in this browser. On iPhone: install the app to your Home Screen first (Share &rarr; Add to Home Screen), then enable this inside the installed app.</p>';
+        const did = localStorage.getItem(DEVICE_KEY);
+        const registered = did && (store.push||[]).some(x=>x.id===did);
+        if(Notification.permission==='granted' && registered)
+          return '<p style="font-family:sans-serif;font-size:13.5px;color:var(--green-dark)"><b>&#10003; Enabled on this device.</b></p>';
+        if(Notification.permission==='denied')
+          return '<p style="font-family:sans-serif;font-size:12.5px;color:var(--muted)">Blocked in your browser settings — allow notifications for this site, then come back here.</p>';
+        return '<button class="btn" onclick="App.enablePush()">Enable on this device</button>';
+      })()}
+    </div>
+
     <div class="card" style="grid-column:1/-1">
       <div class="section-title">Invoice details</div>
       <p style="font-family:'Segoe UI',sans-serif;font-size:13px;color:var(--muted);margin-bottom:12px">
@@ -2189,6 +2524,9 @@ function svgDonut(segments){
 /* =====================================================================
    BOOT
    ===================================================================== */
+primeSnapshots();          // baseline for change-stamping — must run before any save()
+loadSyncCfg();             // picks up sync-config.json if published
+
 if(getAuth() === null){ showLock(); }        // first run — offer password setup
 else if(isUnlocked()){ showApp(); }
 else { showLock(); }
@@ -2197,6 +2535,14 @@ else { showLock(); }
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+
+// Auto-sync: on open, when you come back to the app, when you come online,
+// and every 3 minutes while open (never more than once a minute).
+if(syncToken()) setTimeout(()=>doSync(true), 800);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') autoSync(); });
+window.addEventListener('online', autoSync);
+setInterval(()=>{ if(document.visibilityState==='visible') autoSync(); }, 3*60*1000);
+updateSyncUi(false);
 </script>
 </body>
 </html>

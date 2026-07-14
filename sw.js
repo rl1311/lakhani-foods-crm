@@ -1,32 +1,48 @@
-/* Lakhani Foods CRM — service worker: offline support for the installed app */
-const CACHE = 'lfcrm-v3';
+/* Lakhani Foods CRM — service worker.
+   Network-first for the app itself (so updates arrive), cache fallback offline.
+   All network fetches bypass the browser HTTP cache ('no-cache' / 'reload') so a
+   stale copy can never be re-cached. Push handlers show device notifications. */
+const CACHE = 'lfcrm-v4';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(ASSETS.map(u => new Request(u, {cache: 'reload'}))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  e.waitUntil(caches.keys()
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
 });
 
-// Network-first with cache fallback: always fresh when online, still works offline.
-// The Anthropic API is never cached.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'Lakhani Foods CRM',
+    { body: d.body || 'You have a new notification in the CRM.',
+      icon: './icon-192.png', badge: './icon-192.png' }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({type: 'window'}).then(ws =>
+    ws.length ? ws[0].focus() : clients.openWindow('./')));
+});
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('api.anthropic.com')) return;
+  const url = new URL(e.request.url);
+  if (url.origin !== location.origin) return;   // never intercept GitHub / Anthropic API calls
   e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }))
+    fetch(e.request, {cache: 'no-cache'}).then(r => {
+      if (r.ok) {            // never cache an error response — a CDN hiccup must not stick
+        const copy = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return r;
+      }
+      return caches.match(e.request, {ignoreSearch: true}).then(hit => hit || r);
+    }).catch(() => caches.match(e.request, {ignoreSearch: true}))
   );
 });
