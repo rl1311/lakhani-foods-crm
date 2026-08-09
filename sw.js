@@ -2,8 +2,9 @@
    Network-first for the app itself (so updates arrive), cache fallback offline.
    All network fetches bypass the browser HTTP cache ('no-cache' / 'reload') so a
    stale copy can never be re-cached. Push handlers show device notifications. */
-const CACHE = 'lfcrm-v5';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'lfcrm-v6';
+const ASSETS = ['./', './index.html', './manifest.json',
+  './icon-192.png', './icon-512.png', './icon-192-maskable.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE)
