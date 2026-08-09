@@ -174,6 +174,7 @@
       <img id="sideLogo" alt="Lakhani's" class="side-logo">
       <div class="name hidden" id="sideCompanyName">Lakhani Foods Ltd</div>
       <div class="tag">Customer Relationship Manager</div>
+      <div class="tag" id="sideBuild" style="font-size:10px;opacity:.65;font-style:normal"></div>
     </div>
     <button class="nav-btn" data-view="dashboard" onclick="App.go('dashboard')"><span class="ico">&#128200;</span> Analytics</button>
     <button class="nav-btn" data-view="pipeline"  onclick="App.go('pipeline')"><span class="ico">&#128736;</span> Lead Pipeline</button>
@@ -212,6 +213,7 @@ const BRAND = {
   icon: 'data:image/png;base64,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',
 };
 
+const BUILD = '2026-08-09.2';   // bump on every deploy — shown in Settings so you can confirm what's live
 const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
 const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
 const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
@@ -633,6 +635,7 @@ const App = {
     });
     $('#sideCompanyName').textContent = store.settings.companyName || 'Lakhani Foods Ltd';
     if($('#sideLogo') && !$('#sideLogo').src) $('#sideLogo').src = BRAND.side;
+    if($('#sideBuild')) $('#sideBuild').textContent = 'Build '+BUILD;
     const r = {
       dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
       companies: renderCompanies, banking: renderBanking, settings: renderSettings, stock: renderStock,
@@ -3058,7 +3061,19 @@ else { showLock(); }
 
 // PWA: register service worker so the app installs on the desktop and works offline
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    const check = ()=>{ Promise.resolve().then(()=>reg.update()).catch(()=>{}); };
+    check();                                        // check for a new build every launch
+    setInterval(check, 15*60*1000);
+    reg.addEventListener('updatefound', ()=>{
+      const sw = reg.installing;
+      if(!sw) return;
+      sw.addEventListener('statechange', ()=>{
+        // a new build has taken over — reload once so the user actually sees it
+        if(sw.state==='activated' && navigator.serviceWorker.controller) location.reload();
+      });
+    });
+  }).catch(()=>{});
 }
 
 // Auto-sync: on open, when you come back to the app, when you come online,
