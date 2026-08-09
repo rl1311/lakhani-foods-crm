@@ -65,7 +65,9 @@
   .nav-btn.active{background:rgba(255,255,255,.10);color:#fff;border-left-color:var(--amber)}
   .nav-btn .ico{width:20px;text-align:center}
   .side-bottom{margin-top:auto;padding:14px 24px 0;border-top:1px solid rgba(255,255,255,.12)}
-  main{flex:1;margin-left:225px;padding:30px 38px 60px}
+  /* min-width:0 stops this flex child stretching to its widest table and
+     dragging the whole page sideways on a phone */
+  main{flex:1;min-width:0;margin-left:225px;padding:30px 38px 60px}
   .page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:14px;flex-wrap:wrap}
   .page-head h2{font-size:24px;color:var(--green-dark)}
   .page-head .sub{color:var(--muted);font-size:13.5px;margin-top:3px;font-style:italic}
@@ -163,6 +165,46 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .ai-lead-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-bottom:9px;font-family:'Segoe UI',sans-serif}
   .ai-lead-row input[type=checkbox]{margin-top:4px;width:auto}
+  /* ---------- Phone / tablet ----------
+     The sidebar slides in over the page, tables scroll inside their card, and the
+     kanban board swipes sideways instead of squeezing five columns onto a phone. */
+  #topbar{display:none}
+  #scrim{display:none;position:fixed;inset:0;background:rgba(30,28,22,.45);z-index:140}
+  #scrim.show{display:block}
+  @media(max-width:820px){
+    #topbar{display:flex;align-items:center;gap:12px;position:fixed;top:0;left:0;right:0;height:56px;
+      background:#26251e;color:#f0e8d8;padding:0 14px;z-index:130;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+    #topbar img{height:26px;width:auto}
+    #topbar .tb-btn{background:none;border:none;color:#f0e8d8;font-size:22px;padding:8px 10px;cursor:pointer;line-height:1}
+    #topbar .tb-spacer{margin-left:auto}
+    aside{transform:translateX(-100%);transition:transform .22s ease;z-index:150;width:80%;max-width:290px;
+      padding-top:18px;overflow-y:auto}
+    aside.open{transform:none}
+    main{margin-left:0;padding:74px 14px 48px}
+    .page-head{align-items:flex-start;flex-direction:column;gap:10px}
+    .page-head h2{font-size:20px}
+    .grid{grid-template-columns:1fr!important}
+    .kpis{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+    .f2,.pr-grid,.pr-figs{grid-template-columns:1fr}
+    .card{padding:16px 14px;overflow-x:auto;min-width:0}
+    .grid,.kpis{min-width:0}
+    table{min-width:520px}
+    .board{grid-template-columns:repeat(5,78vw);overflow-x:auto;max-width:100%;padding-bottom:10px;
+      scroll-snap-type:x mandatory}
+    .board .col{scroll-snap-align:start}
+    .modal-bg{align-items:flex-start;padding:0}
+    .modal{max-width:100%;border-radius:0;min-height:100vh;padding:20px 16px}
+    .modal-actions{flex-wrap:wrap}
+    .modal-actions .btn{flex:1 1 auto}
+    /* 16px stops iOS zooming the page every time you tap a field */
+    input,select,textarea{font-size:16px}
+    .btn{padding:11px 15px}
+    .nav-btn{padding:14px 24px;font-size:15.5px}
+  }
+  @media(max-width:520px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .kpi .val{font-size:22px}
+  }
   .banner{background:var(--amber-soft);border:1px solid #edd7b4;color:#7a4d13;border-radius:9px;padding:10px 15px;font-size:12.5px;font-family:'Segoe UI',sans-serif;margin-bottom:15px}
 </style>
 </head>
@@ -171,6 +213,13 @@
 <div id="lockScreen" class="hidden"></div>
 
 <div id="app" class="hidden">
+  <header id="topbar">
+    <button class="tb-btn" onclick="App.toggleMenu()" aria-label="Menu">&#9776;</button>
+    <img id="topLogo" alt="Lakhani's">
+    <span class="tb-spacer"></span>
+    <button class="tb-btn" onclick="doSync()" aria-label="Sync now">&#10227;</button>
+  </header>
+  <div id="scrim" onclick="App.closeMenu()"></div>
   <aside>
     <div class="logo">
       <img id="sideLogo" alt="Lakhani's" class="side-logo">
@@ -217,7 +266,7 @@ const BRAND = {
   icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAGwUlEQVR42u1bW2gc1xn+/jOzu0kr2XWRFHDVqK2Xpqx2V7YDxSSEEdRQCHGJadcYDLVkywrJm6ClhlDGSxso1K1KHhJcIsclL0YT43hlnKQxtYaGYAKu6wgvqVmXxs2FSLnJVi2vduZ8fdgZVVGk1JK9lvbyP+0yM+ec7zv/7Vx+wZcIbShkQQEIACf7ujYq4Y+1xlaQcQJrNBGBYGWEgBKUBLgKkYJSOK0pxx557sLfg8cCGyJZ6MWaWHTow5mMscNxfAAY2ZPeaSoMaCAO4h8k/krgPKHfEahr2hOuBH5lUgjdLFAdAmwSwUMQ3KeAgqcxuO3wW0fnY7kZAmQ4k1E7HMcf2Zv4fswwDwH4hufjUNGToe1/uvAvrGI5vrvrWzGTe00DjwF4r+h7j20byr8ZkKARaPOCBBAQJwB/am96f8SUrNZ8ZjLi/XLHM/kpALBtqG5YaiLfxkzC4YEVBnwAgJPPSGtiXEbh6myg7sNPJJrWlsxfKSVPlDzaDw+99ZvhTMbIOI6WeSTMgh/OZAwAeLmva+i1/q7JXG/SCp+fsS2TXDFrv3m3QMgZ2zLD/7nepPVaf9fky31dQ6E5cCHNDz862Zc6/Mq+9PixXal2ADjUf3+EWP3AF5rQQ/33RwDg2K5U+yv70uMn+1KH52L9nMML2Np/qi9dfCEA/4UXq1BCDC/sSrWf6ksXc73J/XMxYziDMvie1OZX+7t4Ynfng7UCfj4JJ3Z3PvhqfxdzPanNs9hp2yqY/bdzvamnQ7VHjUmIKdebejrXm3y7nOfYSgBgpDf1EwqPtKxtan333bMzGQcLe8oqlnKEg2pv3xL9aHJqQig9254fe1EBgBY+KcTgA4Nnp1sTltQa+CDeszVhyQODZ6eFGNTCJwFAHe9JpYSywZfIswBkFK5GjUqATXyJPCuUDcd7UinTENkJ0flHD59/37ahsl+SN/8/FRu1LeNOAOnOuv5ytDSbhbZtqEez59/P7UnmDaidJsGtInKGgIzCUtllaoAARNb1VrsWdMNSB+ByRGSU5FZTgDg1fycAh/NtXM7MC8Dh3nhrk/GVH/laU5MVSZyUCA2lZMq/ntvxfGEi7HspbUzk2ygAT2j+TSD7TIDN0HIFADIJZ8kEOBkoOPDvQvS+9Wuiz83oyuXLBBBVgiufeg8BmAj7Xkobsxi1XIFis0kRUxkyFS4slioXE+UZ8CnvvHe1eNCrcPwwpdzX3L6XungCAGXIlAZMEwBuZT0fOs3tRy7+G8DP76Q9L9dhz2I2CfM2queqjwILatTtTDSqIQpUjIDFHDcAZDJf9IuOMzuDxApmnpUmQAdg60oDBADT6e+00Ve/EODrgGojOQ0AIiCBJmh8bBjqM9J78cLFy6O2batsNqtrgQACwLp13/xk6sMPD/rKW6eFf4hGzYd9X8NQCiXPO0Hq35uMTswYsU/KHj2ra8oEXNf1AHwA4INk8ts/8zw5p0lqraevF/nTQuHy1dVgAqrC7RsAlNbqutYahkiE4GctN26Ugr5VrRNAANowlBaBhgBCeKV77vECB8laJ2DVS4OABgENAhoENAhoENAgoH7HuNoJkHBJXY8ECAB2dsY3xOPxNfVIgEokElFF2GvXaplDSvURoPXcgxLh9PS0LAJGAEg8Ho8B8E2Z2QvIf86d++ekZVlmJRZPd2JPUEgKISoYfiyfz3sBmLlEzO4NFgqFYvK7Hd8TyG990Y8AQJvrshpNwAPgK8WvKaWgyaIoaUkm4z+YBzoEZ2zcGG9NJuK7jGjsLwQ+bWlpfx0AnAo5w4ppQEdHx13rmmIpCttIHDQjhqm1NkUEivLndGf8Y1CuUxgCiwjQTE81x6IGDKUwXSz+0XVdz7IsM9hhqgoCBABjsViTD/4QxFdFODJT8hwVxDQpH57GKFSfMwGKT2qvOKNvRAzDFF87ANDd7WrXrcxEVWxT9NKlSx8B+PXtaPBWjsBW0gmKZd3aUZnrurrSiVAlCWCl7Pa2RwFlsupugt4y8ACzEtLTPpuA5d0PqDYJMWqfTUJ6CpBrULwXKN+6rnUCZjEq3gvINUWgIEo2E5DWxHjNE9CaGBcCEmAuKIGcBtktAGv5jmAoo3DLt2DJboGcVj55FJTES3s2rc9mQduu3V2i4B4kX9qzaT0oCZ88qrYfGRuj8LLB0uMA2A2rZgkIsNFg6XEKL28/MjZWDoOUpygYeGNgy90TeZfVWCBxE+mpTORdvjGw5W4KBhTlqfKDOr8u3yiYKP+o45KZ+S/WZdFU+EE9ls3VfeFko3R2sYbquXj6fyZRB+Xz/wXpHdO6+uuV0AAAAABJRU5ErkJggg==',
 };
 
-const BUILD = '2026-08-09.10';   // bump on every deploy — shown in Settings so you can confirm what's live
+const BUILD = '2026-08-09.11';   // bump on every deploy — shown in Settings so you can confirm what's live
 const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
 const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
 const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
@@ -901,6 +950,9 @@ const App = {
     });
     $('#sideCompanyName').textContent = store.settings.companyName || 'Lakhani Foods Ltd';
     if($('#sideLogo') && !$('#sideLogo').src) $('#sideLogo').src = BRAND.side;
+    if($('#topLogo') && !$('#topLogo').src) $('#topLogo').src = BRAND.side;
+    this.closeMenu();                      // navigating always dismisses the phone drawer
+    window.scrollTo(0,0);
     if($('#sideBuild')) $('#sideBuild').textContent = 'Build '+BUILD;
     const r = {
       dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
@@ -1710,6 +1762,14 @@ const App = {
   },
 
   /* =============== PRICING (scratchpad — writes only on save) =============== */
+  toggleMenu(){
+    const open = document.querySelector('aside').classList.toggle('open');
+    $('#scrim').classList.toggle('show', open);
+  },
+  closeMenu(){
+    document.querySelector('aside').classList.remove('open');
+    $('#scrim').classList.remove('show');
+  },
   pricingPick(id){ pricingSel = id; this.go('pricing'); },
   pricingMode(m){ pricingMode = m; this.go('pricing'); },
   scenarioPick(v){ scenarioSel = v; this.go('pricing'); },
@@ -2267,6 +2327,33 @@ const App = {
   },
 
   /* =============== SYNC & NOTIFICATIONS =============== */
+  showTokenBox(){
+    $('#sy_alt').classList.remove('hidden');
+    $('#sy_altWrap').classList.add('hidden');
+    const i = $('#sy_token'); if(i) i.focus();
+  },
+  /* Lets you carry the key to a new device without the passphrase — it only ever
+     shows your own token, on your own screen, on a device that is already trusted. */
+  revealToken(){
+    const t = syncToken();
+    if(!t){ toast('This device is not connected.', true); return; }
+    $('#sy_reveal').innerHTML = `
+      <div class="frow" style="margin:0">
+        <label>Your sync token — paste this into the new device</label>
+        <input id="sy_shown" value="${esc(t)}" readonly onclick="this.select()"
+          style="font-family:monospace;font-size:12.5px">
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn small" onclick="App.copyToken()">Copy</button>
+          <button class="btn small ghost" onclick="document.querySelector('#sy_reveal').innerHTML=''">Hide</button>
+        </div>
+        <div class="hint">Treat it like a password — anyone with it can read and change your CRM data.</div>
+      </div>`;
+  },
+  async copyToken(){
+    const el = $('#sy_shown'); if(!el) return;
+    try{ await navigator.clipboard.writeText(el.value); toast('Copied.'); }
+    catch(e){ el.select(); toast('Select it and copy manually.', true); }
+  },
   saveSyncToken(){
     const t = $('#sy_token').value.trim();
     if(!t){ toast('Paste the sync token first.', true); return; }
@@ -4406,22 +4493,33 @@ function renderSettings(){
         to the app, and every few minutes. The ⟳ Sync button in the sidebar runs it any time.</p>
       ${(()=>{
         if(syncToken()) return `
-          <p style="font-family:'Segoe UI',sans-serif;font-size:13.5px;color:var(--green-dark)"><b>&#10003; Sync is active on this device.</b> ${lastSyncText()}.</p>
-          <div style="display:flex;gap:9px;margin-top:10px">
+          <p style="font-family:'Segoe UI',sans-serif;font-size:13.5px;color:var(--pos)"><b>&#10003; Sync is active on this device.</b> ${lastSyncText()}.</p>
+          <div style="display:flex;gap:9px;margin-top:10px;flex-wrap:wrap">
             <button class="btn" onclick="doSync()">Sync now</button>
+            <button class="btn ghost" onclick="App.revealToken()">Show sync token</button>
             <button class="btn ghost" onclick="App.disconnectSync()">Disconnect this device</button>
-          </div>`;
+          </div>
+          <div id="sy_reveal" style="margin-top:12px"></div>
+          <div class="hint" style="margin-top:8px">Adding a phone or another laptop? Show the token here and paste it
+          into the same box on the new device — you don't need the passphrase.</div>`;
+        const tokenBox = `
+          <div class="frow"><label>Sync token</label>
+            <input type="password" id="sy_token" placeholder="github_pat_…" autocomplete="off">
+            <div class="hint">A GitHub fine-grained token for the private data store (repo <b>lakhani-foods-data</b>,
+            Contents read &amp; write). Paste it once on each device — or copy it from a device that is already syncing,
+            under <b>Show sync token</b>.</div></div>
+          <button class="btn" onclick="App.saveSyncToken()">Connect sync</button>`;
         if(syncCfg && syncCfg.configured) return `
           <div class="frow"><label>Sync passphrase</label>
-            <input type="password" id="sy_pass" placeholder="Enter the sync passphrase" onkeydown="if(event.key==='Enter')App.unlockSync()">
+            <input type="password" id="sy_pass" placeholder="Enter the sync passphrase" autocomplete="off" onkeydown="if(event.key==='Enter')App.unlockSync()">
             <div class="hint">One-time step on each device — unlocks the encrypted sync key built into the app.</div></div>
-          <button class="btn" onclick="App.unlockSync()">Unlock sync</button>`;
-        return `
-          <div class="frow"><label>Sync token</label>
-            <input type="password" id="sy_token" placeholder="github_pat_…">
-            <div class="hint">A GitHub fine-grained token for the private data store (repo <b>lakhani-foods-data</b>,
-            Contents read &amp; write). Paste it once on each device.</div></div>
-          <button class="btn" onclick="App.saveSyncToken()">Connect sync</button>`;
+          <button class="btn" onclick="App.unlockSync()">Unlock sync</button>
+          <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+            <div id="sy_altWrap"><button class="btn ghost small" onclick="App.showTokenBox()">
+              Don't have the passphrase? Paste a token instead</button></div>
+            <div id="sy_alt" class="hidden">${tokenBox}</div>
+          </div>`;
+        return tokenBox;
       })()}
     </div>
 
