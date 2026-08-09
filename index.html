@@ -181,7 +181,9 @@
     <button class="nav-btn" data-view="contacts"  onclick="App.go('contacts')"><span class="ico">&#128100;</span> Contacts</button>
     <button class="nav-btn" data-view="companies" onclick="App.go('companies')"><span class="ico">&#127970;</span> Companies</button>
     <button class="nav-btn" data-view="stock"     onclick="App.go('stock')"><span class="ico">&#128230;</span> Stock</button>
+    <button class="nav-btn" data-view="reports"   onclick="App.go('reports')"><span class="ico">&#128202;</span> Reports</button>
     <button class="nav-btn" data-view="pricing"   onclick="App.go('pricing')"><span class="ico">&#128200;</span> Pricing</button>
+    <button class="nav-btn" data-view="quotes"    onclick="App.go('quotes')"><span class="ico">&#128196;</span> Quotes</button>
     <button class="nav-btn" data-view="orders"    onclick="App.go('orders')"><span class="ico">&#128203;</span> Orders</button>
     <button class="nav-btn" data-view="invoices"  onclick="App.go('invoices')"><span class="ico">&#129534;</span> Invoices</button>
     <button class="nav-btn" data-view="banking"   onclick="App.go('banking')"><span class="ico">&#127974;</span> Banking</button>
@@ -213,7 +215,7 @@ const BRAND = {
   icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAGwUlEQVR42u1bW2gc1xn+/jOzu0kr2XWRFHDVqK2Xpqx2V7YDxSSEEdRQCHGJadcYDLVkywrJm6ClhlDGSxso1K1KHhJcIsclL0YT43hlnKQxtYaGYAKu6wgvqVmXxs2FSLnJVi2vduZ8fdgZVVGk1JK9lvbyP+0yM+ec7zv/7Vx+wZcIbShkQQEIACf7ujYq4Y+1xlaQcQJrNBGBYGWEgBKUBLgKkYJSOK0pxx557sLfg8cCGyJZ6MWaWHTow5mMscNxfAAY2ZPeaSoMaCAO4h8k/krgPKHfEahr2hOuBH5lUgjdLFAdAmwSwUMQ3KeAgqcxuO3wW0fnY7kZAmQ4k1E7HMcf2Zv4fswwDwH4hufjUNGToe1/uvAvrGI5vrvrWzGTe00DjwF4r+h7j20byr8ZkKARaPOCBBAQJwB/am96f8SUrNZ8ZjLi/XLHM/kpALBtqG5YaiLfxkzC4YEVBnwAgJPPSGtiXEbh6myg7sNPJJrWlsxfKSVPlDzaDw+99ZvhTMbIOI6WeSTMgh/OZAwAeLmva+i1/q7JXG/SCp+fsS2TXDFrv3m3QMgZ2zLD/7nepPVaf9fky31dQ6E5cCHNDz862Zc6/Mq+9PixXal2ADjUf3+EWP3AF5rQQ/33RwDg2K5U+yv70uMn+1KH52L9nMML2Np/qi9dfCEA/4UXq1BCDC/sSrWf6ksXc73J/XMxYziDMvie1OZX+7t4Ynfng7UCfj4JJ3Z3PvhqfxdzPanNs9hp2yqY/bdzvamnQ7VHjUmIKdebejrXm3y7nOfYSgBgpDf1EwqPtKxtan333bMzGQcLe8oqlnKEg2pv3xL9aHJqQig9254fe1EBgBY+KcTgA4Nnp1sTltQa+CDeszVhyQODZ6eFGNTCJwFAHe9JpYSywZfIswBkFK5GjUqATXyJPCuUDcd7UinTENkJ0flHD59/37ahsl+SN/8/FRu1LeNOAOnOuv5ytDSbhbZtqEez59/P7UnmDaidJsGtInKGgIzCUtllaoAARNb1VrsWdMNSB+ByRGSU5FZTgDg1fycAh/NtXM7MC8Dh3nhrk/GVH/laU5MVSZyUCA2lZMq/ntvxfGEi7HspbUzk2ygAT2j+TSD7TIDN0HIFADIJZ8kEOBkoOPDvQvS+9Wuiz83oyuXLBBBVgiufeg8BmAj7Xkobsxi1XIFis0kRUxkyFS4slioXE+UZ8CnvvHe1eNCrcPwwpdzX3L6XungCAGXIlAZMEwBuZT0fOs3tRy7+G8DP76Q9L9dhz2I2CfM2queqjwILatTtTDSqIQpUjIDFHDcAZDJf9IuOMzuDxApmnpUmQAdg60oDBADT6e+00Ve/EODrgGojOQ0AIiCBJmh8bBjqM9J78cLFy6O2batsNqtrgQACwLp13/xk6sMPD/rKW6eFf4hGzYd9X8NQCiXPO0Hq35uMTswYsU/KHj2ra8oEXNf1AHwA4INk8ts/8zw5p0lqraevF/nTQuHy1dVgAqrC7RsAlNbqutYahkiE4GctN26Ugr5VrRNAANowlBaBhgBCeKV77vECB8laJ2DVS4OABgENAhoENAhoENAgoH7HuNoJkHBJXY8ECAB2dsY3xOPxNfVIgEokElFF2GvXaplDSvURoPXcgxLh9PS0LAJGAEg8Ho8B8E2Z2QvIf86d++ekZVlmJRZPd2JPUEgKISoYfiyfz3sBmLlEzO4NFgqFYvK7Hd8TyG990Y8AQJvrshpNwAPgK8WvKaWgyaIoaUkm4z+YBzoEZ2zcGG9NJuK7jGjsLwQ+bWlpfx0AnAo5w4ppQEdHx13rmmIpCttIHDQjhqm1NkUEivLndGf8Y1CuUxgCiwjQTE81x6IGDKUwXSz+0XVdz7IsM9hhqgoCBABjsViTD/4QxFdFODJT8hwVxDQpH57GKFSfMwGKT2qvOKNvRAzDFF87ANDd7WrXrcxEVWxT9NKlSx8B+PXtaPBWjsBW0gmKZd3aUZnrurrSiVAlCWCl7Pa2RwFlsupugt4y8ACzEtLTPpuA5d0PqDYJMWqfTUJ6CpBrULwXKN+6rnUCZjEq3gvINUWgIEo2E5DWxHjNE9CaGBcCEmAuKIGcBtktAGv5jmAoo3DLt2DJboGcVj55FJTES3s2rc9mQduu3V2i4B4kX9qzaT0oCZ88qrYfGRuj8LLB0uMA2A2rZgkIsNFg6XEKL28/MjZWDoOUpygYeGNgy90TeZfVWCBxE+mpTORdvjGw5W4KBhTlqfKDOr8u3yiYKP+o45KZ+S/WZdFU+EE9ls3VfeFko3R2sYbquXj6fyZRB+Xz/wXpHdO6+uuV0AAAAABJRU5ErkJggg==',
 };
 
-const BUILD = '2026-08-09.2';   // bump on every deploy — shown in Settings so you can confirm what's live
+const BUILD = '2026-08-09.3';   // bump on every deploy — shown in Settings so you can confirm what's live
 const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
 const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
 const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
@@ -225,9 +227,10 @@ const VAPID_PUBLIC = 'BFQ01jvwMThpXvuEY7rYqOt2DiyBh00c5Usp6XXMYZYYydSdrYfJQK35jR
 function freshData(){
   return {
     contacts:[], companies:[], deals:[], orders:[], invoices:[],
+    quotes:[], activities:[],
     stock:{items:[], incoming:[]},
     bank:{connected:false, bankName:'', balance:0, transactions:[], updatedAt:0},
-    counters:{invoice:0},
+    counters:{invoice:0, quote:0},
     push:[], deleted:[], settingsUpdatedAt:0,
     settings:{companyName:'Lakhani Foods Ltd', currency:'£', apiKey:'',
       invoice:{businessName:'', address:'', email:'', phone:'', vatNo:'', termsDays:30, bankDetails:'', footer:'Thank you for your business.'}}
@@ -240,9 +243,18 @@ function loadStore(){
     if(!raw) return freshData();
     const d = JSON.parse(raw);
     const f = freshData();
-    return {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, stock:{...f.stock, ...(d.stock||{})},
+    const st = {...f, ...d, bank:{...f.bank, ...(d.bank||{})}, stock:{...f.stock, ...(d.stock||{})},
       counters:{...f.counters, ...(d.counters||{})},
       settings:{...f.settings, ...(d.settings||{}), invoice:{...f.settings.invoice, ...((d.settings||{}).invoice||{})}}};
+    /* Legacy free-text deal notes become activities so nothing written before is lost */
+    (st.deals||[]).forEach(dl=>{
+      if(!dl.notes || !dl.notes.length || dl.notesMigrated) return;
+      dl.notes.forEach(n=>st.activities.push({
+        id: 'mig'+Math.random().toString(36).slice(2,10), createdAt:n.at, at:(n.at||'').slice(0,10),
+        type:'note', text:n.text, dealId:dl.id, companyId:dl.companyId||null, contactId:dl.contactId||null}));
+      dl.notesMigrated = true;
+    });
+    return st;
   }catch(e){ return freshData(); }
 }
 /* Change-stamping: every save diffs each record against the last snapshot and
@@ -251,7 +263,8 @@ let _prevSnap = null;
 function _snapOf(x){ const c = {...x}; delete c.updatedAt; return JSON.stringify(c); }
 function _collections(){
   return {ct:store.contacts, co:store.companies, dl:store.deals, or:store.orders,
-    iv:store.invoices, si:store.stock.items, sn:store.stock.incoming, pu:store.push||[]};
+    iv:store.invoices, qu:store.quotes||[], ac:store.activities||[],
+    si:store.stock.items, sn:store.stock.incoming, pu:store.push||[]};
 }
 function primeSnapshots(){
   _prevSnap = {};
@@ -316,6 +329,28 @@ function dealById(id){ return store.deals.find(d=>d.id===id); }
 function orderById(id){ return store.orders.find(o=>o.id===id); }
 function invoiceById(id){ return store.invoices.find(i=>i.id===id); }
 function invoiceForOrder(orderId){ return store.invoices.find(i=>i.orderId===orderId); }
+function quoteById(id){ return (store.quotes||[]).find(q=>q.id===id); }
+function quoteTotal(q){ return (q.items||[]).reduce((s,l)=>s + (l.qty*(l.unitPrice||0)), 0); }
+function quoteStatusPill(q){
+  if(q.orderId) return '<span class="pill green">Converted to order</span>';
+  if(q.status==='accepted') return '<span class="pill green">Accepted</span>';
+  if(q.status==='declined') return '<span class="pill red">Declined</span>';
+  if(q.status==='sent'){
+    return (q.validUntil && q.validUntil < todayISO())
+      ? '<span class="pill amber">Expired</span>' : '<span class="pill blue">Sent</span>';
+  }
+  return '<span class="pill grey">Draft</span>';
+}
+function readQuoteLines(){
+  const items = [];
+  document.querySelectorAll('#ql_rows .ql-row').forEach(r=>{
+    const itemId = r.querySelector('.ql-item').value;
+    const qty = Number(r.querySelector('.ql-qty').value)||0;
+    const unitPrice = Number(r.querySelector('.ql-price').value)||0;
+    if(itemId && qty>0) items.push({itemId, qty, unitPrice});
+  });
+  return items;
+}
 function orderTotal(o){ return (o.items||[]).reduce((s,l)=>s + (l.qty*(l.unitPrice||0)), 0); }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 function addDaysISO(dateStr, days){ const d = new Date(dateStr); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
@@ -405,6 +440,7 @@ function buildPayload(){
   return {
     contacts:store.contacts, companies:store.companies, deals:store.deals,
     orders:store.orders, invoices:store.invoices,
+    quotes:store.quotes||[], activities:store.activities||[],
     stock:{items:store.stock.items, incoming:store.stock.incoming},
     bank:store.bank, counters:store.counters,
     settingsShared:{companyName:store.settings.companyName, currency:store.settings.currency, invoice:store.settings.invoice},
@@ -425,6 +461,8 @@ function mergePayloads(r, l){
   out.deals     = alive(mergeById(r.deals,     l.deals));
   out.orders    = alive(mergeById(r.orders,    l.orders));
   out.invoices  = alive(mergeById(r.invoices,  l.invoices));
+  out.quotes    = alive(mergeById(r.quotes,    l.quotes));
+  out.activities= alive(mergeById(r.activities,l.activities));
   out.stock = {
     items:    alive(mergeById((r.stock||{}).items,    (l.stock||{}).items)),
     incoming: alive(mergeById((r.stock||{}).incoming, (l.stock||{}).incoming))
@@ -435,7 +473,8 @@ function mergePayloads(r, l){
     transactions: mergeById(rb.transactions, lb.transactions, txKey)
       .filter(t=>!delSet.has(txKey(t)))
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''))};
-  out.counters = {invoice: Math.max((r.counters||{}).invoice||0, (l.counters||{}).invoice||0)};
+  out.counters = {invoice: Math.max((r.counters||{}).invoice||0, (l.counters||{}).invoice||0),
+                  quote:   Math.max((r.counters||{}).quote||0,   (l.counters||{}).quote||0)};
   if((r.settingsUpdatedAt||0) >= (l.settingsUpdatedAt||0)){
     out.settingsShared = r.settingsShared || l.settingsShared; out.settingsUpdatedAt = r.settingsUpdatedAt||0;
   } else { out.settingsShared = l.settingsShared; out.settingsUpdatedAt = l.settingsUpdatedAt||0; }
@@ -446,6 +485,7 @@ function mergePayloads(r, l){
 function applyPayload(p){
   store.contacts = p.contacts||[]; store.companies = p.companies||[]; store.deals = p.deals||[];
   store.orders = p.orders||[]; store.invoices = p.invoices||[];
+  store.quotes = p.quotes||[]; store.activities = p.activities||[];
   store.stock = {items:(p.stock||{}).items||[], incoming:(p.stock||{}).incoming||[]};
   store.bank = {...freshData().bank, ...(p.bank||{})};
   store.counters = {...store.counters, ...(p.counters||{})};
@@ -639,7 +679,7 @@ const App = {
     const r = {
       dashboard: renderDashboard, pipeline: renderPipeline, contacts: renderContacts,
       companies: renderCompanies, banking: renderBanking, settings: renderSettings, stock: renderStock,
-      orders: renderOrders, invoices: renderInvoices, pricing: renderPricing,
+      orders: renderOrders, invoices: renderInvoices, pricing: renderPricing, quotes: renderQuotes, reports: renderReports,
       contact: ()=>renderContactProfile(param), company: ()=>renderCompanyProfile(param),
       deal: ()=>renderDealProfile(param)
     }[view] || renderDashboard;
@@ -774,7 +814,13 @@ const App = {
           <div class="frow"><label>Deal value (${esc(store.settings.currency)})</label><input id="df_value" type="number" min="0" value="${d?d.value:''}"></div>
           <div class="frow"><label>Stage</label><select id="df_stage">${stageOpts}</select></div>
         </div>
-        <div class="frow"><label>Next step</label><input id="df_next" placeholder="e.g. Send sample box by Friday" value="${esc(d?d.nextStep:'')}"></div>
+        <div class="f2">
+          <div class="frow"><label>Next step</label><input id="df_next" placeholder="e.g. Send sample box" value="${esc(d?d.nextStep:'')}">
+            <div class="hint">What you owe this deal next. Deals without one are flagged on Analytics.</div></div>
+          <div class="frow"><label>Next step due</label><input id="df_nextDue" type="date" value="${esc(d&&d.nextDue?d.nextDue:'')}"></div>
+        </div>
+        <div class="frow" style="max-width:50%"><label>Expected close date</label><input id="df_close" type="date" value="${esc(d&&d.closeDate?d.closeDate:'')}">
+          <div class="hint">Drives the forecast by month and the stock order-by date.</div></div>
         ${store.stock.items.length ? `
         <div class="frow"><label>Stock required for this deal</label>
           <div id="dl_rows">${(d&&d.stockLines?d.stockLines:[]).map(l=>dealLineRowHtml(l)).join('')}</div>
@@ -802,6 +848,7 @@ const App = {
     const data = {
       name, companyId:$('#df_company').value||null, contactId:$('#df_contact').value||null,
       value:Number($('#df_value').value)||0, stage, nextStep:$('#df_next').value.trim(),
+      nextDue:$('#df_nextDue').value||null, closeDate:$('#df_close').value||null,
       stockLines: lines
     };
     if(id){
@@ -845,12 +892,12 @@ const App = {
     d.status='open'; d.closedAt=null; if(d.stage==='Closed Won') d.stage='Negotiation';
     save(); this.go('deal', id); toast('Lead reopened.');
   },
-  addDealNote(id){
-    const input = $('#dn_text'); const txt = input.value.trim();
+  addDealNote(id, text){
+    const d = dealById(id); if(!d) return;
+    const txt = (text!=null ? text : ($('#dn_text') ? $('#dn_text').value.trim() : ''));
     if(!txt) return;
-    const d = dealById(id);
-    d.notes = d.notes || [];
-    d.notes.unshift({at:new Date().toISOString(), text:txt});
+    store.activities.push({id:uid(), createdAt:new Date().toISOString(), at:todayISO(),
+      type:'note', text:txt, dealId:id, companyId:d.companyId||null, contactId:d.contactId||null});
     save(); this.go('deal', id);
   },
 
@@ -871,9 +918,318 @@ const App = {
       if(it) it.onHand -= l.qty;
     });
     d.fulfilled = true; d.fulfilledAt = new Date().toISOString();
-    d.notes = d.notes||[];
-    d.notes.unshift({at:new Date().toISOString(), text:'Stock delivered — quantities deducted from stock on hand.'});
+    store.activities.push({id:uid(), createdAt:new Date().toISOString(), at:todayISO(), type:'note',
+      text:'Stock delivered — quantities deducted from stock on hand.',
+      dealId:d.id, companyId:d.companyId||null, contactId:d.contactId||null});
     save(); this.go('deal', id); toast('Stock deducted for this deal.');
+  },
+
+  /* =============== QUOTES =============== */
+  addQuoteLine(){
+    $('#ql_rows').insertAdjacentHTML('beforeend', quoteLineRowHtml(null));
+    this.onQuoteLineItemChange($('#ql_rows').lastElementChild.querySelector('.ql-item'));
+  },
+  onQuoteLineItemChange(sel){
+    const row = sel.closest('.ql-row');
+    const it = stockItemById(sel.value);
+    const priceEl = row.querySelector('.ql-price'), qtyEl = row.querySelector('.ql-qty');
+    if(it && it.tradePrice!=null && !priceEl.value) priceEl.value = it.tradePrice;
+    if(it && it.moq && !qtyEl.value) qtyEl.value = ceilToMultiple(it.moq, it.orderMultiple);
+    this.checkQuoteLine(sel);
+  },
+  checkQuoteLine(el){
+    const row = el.closest('.ql-row');
+    const it = stockItemById(row.querySelector('.ql-item').value);
+    const qty = Number(row.querySelector('.ql-qty').value)||0;
+    const price = Number(row.querySelector('.ql-price').value)||0;
+    const note = row.querySelector('.ql-note');
+    const parts = [];
+    if(it){
+      const pk = packLabel(it); if(pk) parts.push(esc(pk));
+      const issue = qtyIssue(it, qty);
+      if(issue) parts.push(`<span style="color:var(--red);font-weight:600">${qty} is ${esc(issue.msg)}</span>
+        <button type="button" class="btn small ghost" style="padding:1px 7px;margin-left:4px"
+          onclick="App.roundUpQuoteLine(this, ${issue.suggest})">Round up to ${issue.suggest}</button>`);
+      const m = lineMargin(it, price, qty);
+      if(m && qty){
+        const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+        parts.push(`margin <span style="color:${col};font-weight:600">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>`);
+      }
+    }
+    note.innerHTML = parts.join(' &nbsp;·&nbsp; ');
+    this.refreshQuoteTotals();
+  },
+  roundUpQuoteLine(btn, qty){
+    const row = btn.closest('.ql-row');
+    row.querySelector('.ql-qty').value = qty;
+    this.checkQuoteLine(row.querySelector('.ql-qty'));
+  },
+  refreshQuoteTotals(){
+    const el = $('#ql_totals'); if(!el) return;
+    const items = readQuoteLines();
+    if(!items.length){ el.innerHTML = ''; return; }
+    const m = orderMargin({items});
+    const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+    el.innerHTML = `<b>Quote total ${fmtMoney(m.rev)}</b>`
+      + (m.cost ? ` &nbsp;·&nbsp; cost ${fmtMoney(m.cost)} &nbsp;·&nbsp; gross margin
+        <span style="color:${col};font-weight:700">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>` : '');
+  },
+  openQuoteForm(id, preset){
+    preset = preset || {};
+    if(!store.stock.items.length){ toast('Add your products in the Stock tab first — quotes are built from SKUs.', true); return; }
+    if(!store.companies.length){ toast('Add a company first — every quote belongs to a company.', true); return; }
+    const q = id ? quoteById(id) : null;
+    const cur = q || preset;
+    const compOpts = store.companies.map(c=>`<option value="${c.id}" ${cur.companyId===c.id?'selected':''}>${esc(c.name)}</option>`).join('');
+    const conOpts = ['<option value="">— none —</option>'].concat(
+      store.contacts.map(c=>`<option value="${c.id}" ${cur.contactId===c.id?'selected':''}>${esc(contactName(c))}</option>`)).join('');
+    const dealOpts = ['<option value="">— none —</option>'].concat(
+      store.deals.map(d=>`<option value="${d.id}" ${cur.dealId===d.id?'selected':''}>${esc(d.name)}</option>`)).join('');
+    this.modal(`
+      <div class="modal">
+        <h3>${q?'Edit quote '+esc(q.number):'New quote'}</h3>
+        <div class="f2">
+          <div class="frow"><label>Company *</label><select id="qf_company">${compOpts}</select></div>
+          <div class="frow"><label>Contact</label><select id="qf_contact">${conOpts}</select></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label>Linked deal</label><select id="qf_deal">${dealOpts}</select>
+            <div class="hint">Links the quote to a lead so it shows on that deal's timeline.</div></div>
+          <div class="frow"><label>Valid until</label><input id="qf_valid" type="date" value="${q&&q.validUntil?q.validUntil:addDaysISO(todayISO(),30)}"></div>
+        </div>
+        <div class="frow"><label>Quote lines (SKU × quantity × unit price)</label>
+          <div id="ql_rows">${(q&&q.items?q.items:[]).map(l=>quoteLineRowHtml(l)).join('')}</div>
+          <button type="button" class="btn small ghost" onclick="App.addQuoteLine()">+ Add SKU</button>
+          <div id="ql_totals" style="margin-top:9px;font-family:'Segoe UI',sans-serif;font-size:13px"></div>
+          <div class="hint">Pack size, MOQ and lead time are printed on the quote automatically.</div>
+        </div>
+        <div class="frow"><label>Notes on the quote</label><textarea id="qf_notes" placeholder="e.g. Delivered to your Enfield depot. Prices exclude VAT.">${esc(q?q.notes:'')}</textarea></div>
+        <div class="modal-actions">
+          ${q?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteQuote(\''+q.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveQuote('${q?q.id:''}')">${q?'Save quote':'Create quote'}</button>
+        </div>
+      </div>`);
+    document.querySelectorAll('#ql_rows .ql-row .ql-qty').forEach(el=>this.checkQuoteLine(el));
+    this.refreshQuoteTotals();
+  },
+  saveQuote(id){
+    const companyId = $('#qf_company').value;
+    if(!companyId){ toast('Choose a company.', true); return; }
+    const items = readQuoteLines();
+    if(!items.length){ toast('Add at least one quote line with a quantity.', true); return; }
+    const breaches = items.map(l=>{
+      const it = stockItemById(l.itemId); const iss = qtyIssue(it, l.qty);
+      return iss ? `${it.name}: ${l.qty} is ${iss.msg}` : null;
+    }).filter(Boolean);
+    if(breaches.length && !confirm('These lines break your ordering rules:\n\n  ' + breaches.join('\n  ')
+      + '\n\nQuote it anyway?')) return;
+    const data = {companyId, contactId:$('#qf_contact').value||null, dealId:$('#qf_deal').value||null,
+      validUntil:$('#qf_valid').value||null, notes:$('#qf_notes').value.trim(), items};
+    if(id){ Object.assign(quoteById(id), data); save(); this.closeModal(); this.go(this.view, this.param); toast('Quote updated.'); return; }
+    store.counters.quote = (store.counters.quote||0) + 1;
+    const q = {id:uid(), number:'QUO-'+String(store.counters.quote).padStart(4,'0'),
+      date:todayISO(), status:'draft', orderId:null, createdAt:new Date().toISOString(), ...data};
+    store.quotes.push(q);
+    save(); this.closeModal(); this.openQuoteView(q.id); toast('Quote '+q.number+' created.');
+  },
+  deleteQuote(id){
+    if(!confirm('Delete this quote?')) return;
+    markDeleted(id);
+    store.quotes = store.quotes.filter(q=>q.id!==id);
+    save(); this.closeModal(); this.go('quotes'); toast('Quote deleted.');
+  },
+  markQuoteSent(id){
+    const q = quoteById(id); if(!q) return;
+    q.status = 'sent'; q.sentAt = new Date().toISOString();
+    if(q.dealId) store.activities.push({id:uid(), createdAt:new Date().toISOString(), at:todayISO(),
+      type:'quote', text:'Sent quote '+q.number+' — '+fmtMoney(quoteTotal(q)),
+      dealId:q.dealId, companyId:q.companyId, contactId:q.contactId});
+    save(); this.go(this.view, this.param); toast('Marked as sent.');
+  },
+  setQuoteStatus(id, status){
+    const q = quoteById(id); if(!q) return;
+    q.status = status;
+    save(); this.go(this.view, this.param); toast('Quote marked '+status+'.');
+  },
+  /* Turn an accepted quote into a confirmed order, keeping the quoted prices */
+  convertQuoteToOrder(id){
+    const q = quoteById(id); if(!q) return;
+    if(q.orderId){ toast('This quote has already become an order.', true); this.go('orders'); return; }
+    if(!confirm(`Turn ${q.number} into a confirmed order?\n\nThe quoted prices are carried across unchanged.`)) return;
+    const o = {id:uid(), createdAt:new Date().toISOString(), status:'confirmed',
+      companyId:q.companyId, contactId:q.contactId, ref:q.number,
+      orderDate:todayISO(), deliveryDate:null, items:q.items.map(l=>({...l})), quoteId:q.id};
+    store.orders.push(o);
+    q.orderId = o.id; q.status = 'accepted';
+    if(q.dealId) store.activities.push({id:uid(), createdAt:new Date().toISOString(), at:todayISO(),
+      type:'note', text:'Quote '+q.number+' accepted and converted to an order.',
+      dealId:q.dealId, companyId:q.companyId, contactId:q.contactId});
+    save();
+    this.openInvoicePrompt(o.id);
+  },
+  openQuoteView(id){
+    const q = quoteById(id); if(!q) return;
+    const co = companyById(q.companyId);
+    const con = q.contactId ? contactById(q.contactId) : null;
+    const biz = store.settings.invoice || {};
+    const bizName = biz.businessName || store.settings.companyName || 'Lakhani Foods Ltd';
+    const expired = q.validUntil && q.validUntil < todayISO() && q.status!=='accepted';
+    this.modal(`
+      <div class="modal" style="max-width:760px">
+        <h3>Quote ${esc(q.number)} ${quoteStatusPill(q)}</h3>
+        <div id="quotePrintArea" style="border:1px solid var(--border);border-radius:10px;padding:26px;background:#fff">
+          <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap">
+            <div>
+              <img src="${BRAND.doc}" alt="${esc(bizName)}" style="width:230px;max-width:100%;height:auto;display:block;margin-bottom:10px">
+              <div class="sans" style="font-size:12.5px;color:#555;white-space:pre-wrap">${esc(biz.address||'')}</div>
+              ${biz.vatNo?`<div class="sans" style="font-size:12.5px;color:#555">VAT: ${esc(biz.vatNo)}</div>`:''}
+              ${biz.email?`<div class="sans" style="font-size:12.5px;color:#555">${esc(biz.email)}${biz.phone?' · '+esc(biz.phone):''}</div>`:''}
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:24px;color:var(--green-dark);letter-spacing:1px">QUOTATION</div>
+              <div class="sans" style="font-size:13px"><b>${esc(q.number)}</b></div>
+              <div class="sans" style="font-size:12.5px;color:#555">Date: ${fdate(q.date)}</div>
+              ${q.validUntil?`<div class="sans" style="font-size:12.5px;color:${expired?'#b03a2e':'#555'}">Valid until: ${fdate(q.validUntil)}</div>`:''}
+            </div>
+          </div>
+          <div style="margin:18px 0 14px">
+            <div class="sans" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.7px">Quotation for</div>
+            <div style="font-weight:bold">${esc(co?co.name:'')}</div>
+            ${co&&co.location?`<div class="sans" style="font-size:12.5px;color:#555">${esc(co.location)}</div>`:''}
+            ${con?`<div class="sans" style="font-size:12.5px;color:#555">FAO ${esc(contactName(con))}</div>`:''}
+          </div>
+          <table>
+            <thead><tr><th>Item</th><th>Pack</th><th>Qty</th><th>Unit price</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody>
+            ${q.items.map(l=>{
+              const it = stockItemById(l.itemId);
+              const rules = it ? orderRuleLabel(it) : '';
+              return `<tr>
+                <td><b>${it?esc(it.name):'Item'}</b>${rules?`<div class="sans" style="font-size:11.5px;color:#666">${esc(rules)}</div>`:''}</td>
+                <td class="sans" style="font-size:12px">${it&&packLabel(it)?esc(packLabel(it)):'—'}</td>
+                <td>${l.qty} ${it?esc(it.unit):''}</td>
+                <td>${fmtMoney(l.unitPrice)}</td>
+                <td style="text-align:right">${fmtMoney(l.qty*l.unitPrice)}</td></tr>`;
+            }).join('')}
+            <tr><td colspan="4" style="text-align:right;font-weight:bold;border-top:2px solid var(--border)">Total</td>
+                <td style="text-align:right;font-weight:bold;border-top:2px solid var(--border)">${fmtMoney(quoteTotal(q))}</td></tr>
+            </tbody>
+          </table>
+          ${q.notes?`<div class="sans" style="font-size:12.5px;color:#555;margin-top:16px;white-space:pre-wrap">${esc(q.notes)}</div>`:''}
+          <div class="sans" style="font-size:11.5px;color:#888;margin-top:14px">
+            Prices exclude VAT unless stated. Lead times shown are from order confirmation.</div>
+        </div>
+        <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+          <button class="btn ghost" onclick="App.closeModal()">Close</button>
+          <button class="btn ghost" onclick="App.printQuote()">&#128424; Print / Save as PDF</button>
+          ${q.status==='draft'?`<button class="btn" onclick="App.markQuoteSent('${q.id}')">Mark as sent</button>`:''}
+          ${(q.status==='sent')?`<button class="btn ghost" onclick="App.setQuoteStatus('${q.id}','declined')">Declined</button>`:''}
+          ${(q.status==='sent'||q.status==='draft')&&!q.orderId?`<button class="btn amber" onclick="App.convertQuoteToOrder('${q.id}')">Accepted — make it an order</button>`:''}
+          ${q.orderId?`<button class="btn ghost" onclick="App.closeModal();App.go('orders')">View the order</button>`:''}
+        </div>
+      </div>`);
+  },
+  printQuote(){
+    const area = $('#quotePrintArea'); if(!area) return;
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Quotation</title><style>'
+      + 'body{font-family:Georgia,serif;padding:32px;color:#1e2a23}'
+      + 'table{width:100%;border-collapse:collapse;margin-top:10px}'
+      + 'th,td{text-align:left;padding:7px 6px;border-bottom:1px solid #e2ded2;font-size:13px}'
+      + 'th{font-family:Segoe UI,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7a70}'
+      + '.sans{font-family:Segoe UI,sans-serif}</style></head><body>'
+      + area.innerHTML + '</body></html>');
+    w.document.close(); w.focus();
+    setTimeout(()=>w.print(), 350);
+  },
+
+  /* =============== ACTIVITIES =============== */
+  openActivityForm(id, preset){
+    preset = preset || {};
+    const a = id ? activityById(id) : null;
+    const scope = a || preset;
+    const dealOpts = ['<option value="">— none —</option>'].concat(
+      store.deals.map(d=>`<option value="${d.id}" ${scope.dealId===d.id?'selected':''}>${esc(d.name)}</option>`)).join('');
+    const conOpts = ['<option value="">— none —</option>'].concat(
+      store.contacts.map(c=>`<option value="${c.id}" ${scope.contactId===c.id?'selected':''}>${esc(contactName(c))}</option>`)).join('');
+    const compOpts = ['<option value="">— none —</option>'].concat(
+      store.companies.map(c=>`<option value="${c.id}" ${scope.companyId===c.id?'selected':''}>${esc(c.name)}</option>`)).join('');
+    this.modal(`
+      <div class="modal">
+        <h3>${a?'Edit activity':'Log activity'}</h3>
+        <div class="f2">
+          <div class="frow"><label>What happened</label><select id="ac_type">${
+            ACTIVITY_TYPES.map(t=>`<option value="${t.k}" ${(a?a.type:'call')===t.k?'selected':''}>${t.icon} ${t.label}</option>`).join('')
+          }</select></div>
+          <div class="frow"><label>Date</label><input id="ac_at" type="date" value="${a&&a.at?a.at.slice(0,10):todayISO()}"></div>
+        </div>
+        <div class="frow"><label>Notes *</label><textarea id="ac_text" placeholder="e.g. Spoke to the buyer — wants a sample box before committing">${esc(a?a.text:'')}</textarea></div>
+        <div class="f2">
+          <div class="frow"><label>Deal</label><select id="ac_deal">${dealOpts}</select></div>
+          <div class="frow"><label>Contact</label><select id="ac_contact">${conOpts}</select></div>
+        </div>
+        <div class="frow"><label>Company</label><select id="ac_company">${compOpts}</select></div>
+        ${!a && scope.dealId ? `
+        <div class="frow" style="border-top:1px solid var(--border);padding-top:12px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="ac_setNext" style="width:auto;margin:0" checked onchange="App.toggleNextFields()">
+            <span>Also set the next step on this deal</span></label>
+          <div id="ac_nextFields" class="f2" style="margin-top:8px">
+            <div class="frow"><label>Next step</label><input id="ac_nextStep" placeholder="e.g. Chase sample feedback"></div>
+            <div class="frow"><label>Due</label><input id="ac_nextDue" type="date" value="${addDaysISO(todayISO(), 7)}"></div>
+          </div>
+        </div>`:''}
+        <div class="modal-actions">
+          ${a?'<button class="btn danger small" style="margin-right:auto" onclick="App.deleteActivity(\''+a.id+'\')">Delete</button>':''}
+          <button class="btn ghost" onclick="App.closeModal()">Cancel</button>
+          <button class="btn" onclick="App.saveActivity('${a?a.id:''}')">${a?'Save activity':'Log it'}</button>
+        </div>
+      </div>`);
+  },
+  toggleNextFields(){
+    const on = $('#ac_setNext').checked;
+    $('#ac_nextFields').style.display = on ? '' : 'none';
+  },
+  saveActivity(id){
+    const text = $('#ac_text').value.trim();
+    if(!text){ toast('Add a line about what happened.', true); return; }
+    const data = {
+      type: $('#ac_type').value, at: $('#ac_at').value || todayISO(), text,
+      dealId: $('#ac_deal').value||null, contactId: $('#ac_contact').value||null,
+      companyId: $('#ac_company').value||null
+    };
+    /* An activity logged against a deal inherits that deal's company and contact,
+       so it surfaces on their timelines even if they weren't picked explicitly. */
+    if(data.dealId){
+      const d = dealById(data.dealId);
+      if(d){ if(!data.companyId) data.companyId = d.companyId||null;
+             if(!data.contactId) data.contactId = d.contactId||null; }
+    }
+    if(id){ Object.assign(activityById(id), data); toast('Activity updated.'); }
+    else {
+      store.activities.push({id:uid(), createdAt:new Date().toISOString(), ...data});
+      const setNext = $('#ac_setNext');
+      if(setNext && setNext.checked && data.dealId){
+        const d = dealById(data.dealId);
+        const step = $('#ac_nextStep').value.trim();
+        if(d && step){ d.nextStep = step; d.nextDue = $('#ac_nextDue').value || null; }
+      }
+      toast('Activity logged.');
+    }
+    save(); this.closeModal(); this.go(this.view, this.param);
+  },
+  deleteActivity(id){
+    if(!confirm('Delete this activity?')) return;
+    markDeleted(id);
+    store.activities = store.activities.filter(a=>a.id!==id);
+    save(); this.closeModal(); this.go(this.view, this.param);
+  },
+  /* Clear a deal's next step once it's done, prompting for the following one */
+  completeNextStep(dealId){
+    const d = dealById(dealId); if(!d) return;
+    this.openActivityForm(null, {dealId:d.id, companyId:d.companyId, contactId:d.contactId});
+    setTimeout(()=>{ const t=$('#ac_text'); if(t){ t.value = 'Done: '+d.nextStep; t.focus(); } }, 30);
   },
 
   /* =============== PRICING (scratchpad — writes only on save) =============== */
@@ -1730,6 +2086,80 @@ For each lead give: a realistic company profile of the kind that exists in this 
    ===================================================================== */
 
 /* ---------------- Stock helpers ---------------- */
+/* ---------------- Activities ----------------
+   One dated, typed record of something that happened, attached to any of a deal,
+   a contact or a company. A deal's activity also shows on its company and contact. */
+const ACTIVITY_TYPES = [
+  {k:'call',    label:'Call',        icon:'☎️'},
+  {k:'email',   label:'Email',       icon:'✉️'},
+  {k:'meeting', label:'Meeting',     icon:'\u{1F91D}'},
+  {k:'sample',  label:'Sample sent', icon:'\u{1F4E6}'},
+  {k:'quote',   label:'Quote sent',  icon:'\u{1F4C4}'},
+  {k:'note',    label:'Note',        icon:'\u{1F4DD}'}
+];
+function activityType(k){ return ACTIVITY_TYPES.find(t=>t.k===k) || ACTIVITY_TYPES[5]; }
+function activityById(id){ return (store.activities||[]).find(a=>a.id===id); }
+
+/* Activities relevant to a record. A company sees everything from its deals and its
+   people; a contact sees its own and its deals'; a deal sees only its own. */
+function activitiesFor(scope){
+  const acts = store.activities || [];
+  let list;
+  if(scope.dealId){
+    list = acts.filter(a=>a.dealId===scope.dealId);
+  } else if(scope.contactId){
+    const dealIds = new Set(store.deals.filter(d=>d.contactId===scope.contactId).map(d=>d.id));
+    list = acts.filter(a=>a.contactId===scope.contactId || dealIds.has(a.dealId));
+  } else if(scope.companyId){
+    const dealIds = new Set(store.deals.filter(d=>d.companyId===scope.companyId).map(d=>d.id));
+    const conIds  = new Set(store.contacts.filter(c=>c.companyId===scope.companyId).map(c=>c.id));
+    list = acts.filter(a=>a.companyId===scope.companyId || dealIds.has(a.dealId) || conIds.has(a.contactId));
+  } else {
+    list = acts.slice();
+  }
+  return list.sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+}
+function lastActivityAt(scope){ const l = activitiesFor(scope); return l.length ? l[0].at : null; }
+function daysSince(iso){
+  if(!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+}
+function activityTimelineHtml(list, opts){
+  opts = opts || {};
+  if(!list.length) return '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">Nothing logged yet.</div>';
+  return list.map(a=>{
+    const t = activityType(a.type);
+    const d = a.dealId ? dealById(a.dealId) : null;
+    return `<div class="note-item">
+      <div><span title="${esc(t.label)}">${t.icon}</span> <b>${esc(t.label)}</b> — ${esc(a.text)}</div>
+      <div class="when">${fdate(a.at)}${a.who?' · '+esc(a.who):''}${
+        opts.showDeal && d ? ` · <a class="lnk" onclick="App.go('deal','${d.id}')">${esc(d.name)}</a>` : ''}
+        · <a class="lnk" onclick="App.openActivityForm('${a.id}')">edit</a></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- Next actions ----------------
+   Every open deal should carry a next step and a date. These drive the dashboard. */
+function dealDueState(d){
+  if(d.status!=='open') return null;
+  if(!d.nextStep) return {cls:'grey', txt:'No next step', order:1};
+  if(!d.nextDue)   return {cls:'grey', txt:'No date set',  order:2};
+  const today = todayISO();
+  if(d.nextDue <  today) return {cls:'red',   txt:'Overdue',   order:0};
+  if(d.nextDue === today) return {cls:'amber', txt:'Due today', order:0};
+  return {cls:'green', txt:'Due '+fdate(d.nextDue), order:3};
+}
+function dealsNeedingAttention(){
+  const today = todayISO();
+  const open = store.deals.filter(d=>d.status==='open');
+  return {
+    overdue:  open.filter(d=>d.nextDue && d.nextDue <  today).sort((a,b)=>a.nextDue.localeCompare(b.nextDue)),
+    today:    open.filter(d=>d.nextDue && d.nextDue === today),
+    noAction: open.filter(d=>!d.nextStep || !d.nextDue)
+  };
+}
+
 function stockItemById(id){ return store.stock.items.find(i=>i.id===id); }
 
 /* ---- Product packing / ordering helpers ---- */
@@ -1761,6 +2191,20 @@ function qtyIssue(it, qty){
 function ceilToMultiple(n, m){ return m ? Math.ceil(n/m)*m : n; }
 /* How much to actually order: at least the shortfall, rounded up to a whole purchase multiple,
    and never less than the reorder quantity if one is set */
+/* The earliest date this product is actually needed, taken from the expected close
+   dates of the open deals that demand it. Null when no such deal carries a date. */
+function neededBy(it){
+  const dates = store.deals
+    .filter(d=>d.status==='open' && d.closeDate && dealQtyFor(d, it.id) > 0)
+    .map(d=>d.closeDate).sort();
+  return dates.length ? dates[0] : null;
+}
+/* Latest date the supplier order can go out and still arrive in time */
+function orderByDate(it){
+  const need = neededBy(it);
+  if(!need || it.leadTimeDays==null) return null;
+  return addDaysISO(need, -it.leadTimeDays);
+}
 function orderQtyAdvice(it, shortfall){
   let q = ceilToMultiple(shortfall, it.orderMultiple);
   if(it.reorderQty && it.reorderQty > q) q = it.reorderQty;
@@ -1837,6 +2281,18 @@ function dealLineRowHtml(l){
     <input class="dl-qty" type="number" min="0" placeholder="Qty" value="${l?l.qty:''}" style="width:90px">
     <button type="button" class="btn small danger" onclick="this.parentElement.remove()">&times;</button></div>`;
 }
+function quoteLineRowHtml(l){
+  const opts = store.stock.items.map(it=>`<option value="${it.id}" ${l&&l.itemId===it.id?'selected':''}>${esc(it.name)} (${esc(it.unit)})</option>`).join('');
+  return `<div class="ql-row" style="margin-bottom:9px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <select class="ql-item" style="flex:1.4" onchange="App.onQuoteLineItemChange(this)">${opts}</select>
+      <input class="ql-qty" type="number" min="0" placeholder="Qty" value="${l?l.qty:''}" style="width:80px" oninput="App.checkQuoteLine(this)">
+      <input class="ql-price" type="number" min="0" step="0.01" placeholder="Unit price" value="${l&&l.unitPrice!=null?l.unitPrice:''}" style="width:105px" oninput="App.checkQuoteLine(this)">
+      <button type="button" class="btn small danger" onclick="this.closest('.ql-row').remove(); App.refreshQuoteTotals()">&times;</button>
+    </div>
+    <div class="ql-note" style="font-size:11.5px;color:var(--muted);margin:3px 2px 0"></div>
+  </div>`;
+}
 function orderLineRowHtml(l){
   const opts = store.stock.items.map(it=>`<option value="${it.id}" ${l&&l.itemId===it.id?'selected':''}>${esc(it.name)} (${esc(it.unit)})</option>`).join('');
   return `<div class="ol-row" style="margin-bottom:9px">
@@ -1900,6 +2356,37 @@ function renderDashboard(){
     <button class="btn amber" onclick="App.openLeadGen()">&#10024; Ask Claude to generate leads</button>
   </div>
 
+  ${(()=>{
+    const n = dealsNeedingAttention();
+    if(!n.overdue.length && !n.today.length && !n.noAction.length) return store.deals.filter(d=>d.status==='open').length
+      ? `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--green)">
+          <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px">&#9989; <b>Nothing overdue.</b>
+          Every open deal has a next step with a future date.</div></div>` : '';
+    const row = (d, tone) => {
+      const co = d.companyId ? companyById(d.companyId) : null;
+      return `<tr class="clickable" onclick="App.go('deal','${d.id}')">
+        <td><b>${esc(d.name)}</b>${co?`<div style="font-size:11.5px;color:var(--muted)">${esc(co.name)}</div>`:''}</td>
+        <td>${esc(d.nextStep)||'<span style="color:var(--muted)">no next step set</span>'}</td>
+        <td style="white-space:nowrap;color:${tone}">${d.nextDue?fdate(d.nextDue):'—'}</td>
+        <td>${fmt(d.value)}</td>
+        <td style="text-align:right"><button class="btn small ghost"
+          onclick="event.stopPropagation();App.completeNextStep('${d.id}')">Log as done</button></td></tr>`;
+    };
+    return `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--${n.overdue.length?'red':'amber'})">
+      <div class="section-title" style="color:var(--${n.overdue.length?'red':'amber'})">
+        &#9200; Your next actions
+        <span style="float:right;font-weight:normal;font-size:12.5px;color:var(--muted)">
+          ${n.overdue.length} overdue · ${n.today.length} due today · ${n.noAction.length} with nothing planned</span>
+      </div>
+      <table><thead><tr><th>Deal</th><th>Next step</th><th>Due</th><th>Value</th><th></th></tr></thead><tbody>
+        ${n.overdue.map(d=>row(d,'var(--red)')).join('')}
+        ${n.today.map(d=>row(d,'var(--amber)')).join('')}
+        ${n.noAction.slice(0,8).map(d=>row(d,'var(--muted)')).join('')}
+      </tbody></table>
+      ${n.noAction.length>8?`<div style="font-size:12px;color:var(--muted);font-family:sans-serif;margin-top:8px">
+        and ${n.noAction.length-8} more with no next step — see the pipeline.</div>`:''}
+    </div>`;
+  })()}
   ${(()=>{ const due = reorderDue(); if(!due.length) return '';
     return `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--amber)">
       <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px">
@@ -1954,6 +2441,28 @@ function renderDashboard(){
         {label:'Lost', value:s.lost.length, color:'#b03a2e'}])}</div>
     <div class="card"><div class="chart-title">New leads per month</div>${svgLine(leadsSeries, '#d98324')}</div>
     <div class="card"><div class="chart-title">Revenue won per month</div>${svgBars(wonSeries, '#d98324', true)}</div>
+    ${(()=>{
+      /* Weighted forecast by expected close month — only deals that carry a close date */
+      const dated = store.deals.filter(d=>d.status==='open' && d.closeDate);
+      if(!dated.length) return `<div class="card"><div class="chart-title">Forecast by close month</div>
+        <div style="color:var(--muted);font-size:13px;font-family:sans-serif">
+          Set an expected close date on your open deals and this shows the weighted forecast month by month.</div></div>`;
+      const fm = [];
+      const base = new Date(); base.setDate(1);
+      for(let i=0;i<6;i++){
+        const dt = new Date(base.getFullYear(), base.getMonth()+i, 1);
+        const k = monthKey(dt.toISOString());
+        fm.push({label: monthLabel(k),
+          value: dated.filter(d=>monthKey(d.closeDate)===k)
+                      .reduce((x,d)=>x + d.value*(STAGE_PROB[d.stage]||0), 0)});
+      }
+      const undated = store.deals.filter(d=>d.status==='open' && !d.closeDate).length;
+      return `<div class="card"><div class="chart-title">Weighted forecast by close month</div>
+        ${svgBars(fm, '#1e5c40', true)}
+        ${undated?`<div style="font-size:11.5px;color:var(--muted);font-family:sans-serif;margin-top:6px">
+          ${undated} open deal${undated===1?'':'s'} ${undated===1?'has':'have'} no close date and ${undated===1?'is':'are'} not counted here.</div>`:''}
+      </div>`;
+    })()}
     ${topCompanies.length? `<div class="card" style="grid-column:1/-1"><div class="chart-title">Top companies by deal value (open + won)</div>${svgHBars(topCompanies)}</div>`:''}
   </div>`}
   `;
@@ -1978,7 +2487,10 @@ function renderPipeline(){
           <div class="dn">${esc(d.name)}</div>
           <div class="dc">${comp?esc(comp.name):'No company'}</div>
           <div class="dv">${fmt(d.value)}</div>
-          <div class="tags">${d.source==='claude'?'<span class="pill amber">AI suggested</span> ':''}${d.status==='won'?'<span class="pill green">Won</span>':''}</div>
+          ${d.nextStep?`<div class="dc" style="margin-top:5px">&rarr; ${esc(d.nextStep)}</div>`:''}
+          <div class="tags">${(()=>{ const st = dealDueState(d);
+              return st && (st.cls==='red'||st.cls==='amber'||!d.nextStep) ? `<span class="pill ${st.cls}">${esc(st.txt)}</span> ` : ''; })()
+            }${d.source==='claude'?'<span class="pill amber">AI suggested</span> ':''}${d.status==='won'?'<span class="pill green">Won</span>':''}</div>
         </div>`;
       }).join('') || '<div style="color:#a9a48f;font-size:12.5px;font-family:sans-serif;padding:8px 2px">Drop leads here</div>'}
     </div>`;
@@ -2040,6 +2552,7 @@ function renderDealProfile(id){
     <div style="display:flex;gap:10px">
       ${d.status==='open' ? '<button class="btn danger small" onclick="App.markLost(\''+d.id+'\')">Mark lost</button>':''}
       ${d.status!=='open' ? '<button class="btn ghost small" onclick="App.reopenDeal(\''+d.id+'\')">Reopen</button>':''}
+      <button class="btn ghost small" onclick="App.openQuoteForm(null, {dealId:'${d.id}', companyId:'${d.companyId||''}', contactId:'${d.contactId||''}'})">Quote</button>
       <button class="btn" onclick="App.openDealForm('${d.id}')">Edit</button>
     </div>
   </div>
@@ -2052,7 +2565,9 @@ function renderDealProfile(id){
         <div class="k">Weighted value</div><div>${fmt(d.value*(STAGE_PROB[d.stage]||0))}</div>
         <div class="k">Company</div><div>${comp?`<a class="lnk" onclick="App.go('company','${comp.id}')">${esc(comp.name)}</a>`:'—'}</div>
         <div class="k">Contact</div><div>${con?`<a class="lnk" onclick="App.go('contact','${con.id}')">${esc(contactName(con))}</a>${con.role?' · '+esc(con.role):''}`:'—'}</div>
-        <div class="k">Next step</div><div>${esc(d.nextStep)||'—'}</div>
+        <div class="k">Next step</div><div>${esc(d.nextStep)||'<span style="color:var(--muted)">not set</span>'}${
+          (()=>{ const st = dealDueState(d); return st && d.nextDue ? ` <span class="pill ${st.cls}">${esc(st.txt)}</span>` : ''; })()}</div>
+        <div class="k">Expected close</div><div>${d.closeDate?fdate(d.closeDate):'<span style="color:var(--muted)">not set</span>'}</div>
         <div class="k">Created</div><div>${fdate(d.createdAt)}</div>
         <div class="k">Closed</div><div>${fdate(d.closedAt)}</div>
       </div>
@@ -2083,15 +2598,31 @@ function renderDealProfile(id){
         </div>`:''}
     </div>
     <div class="card">
-      <div class="section-title">Notes &amp; activity</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input id="dn_text" placeholder="Add a note… e.g. Called buyer, sending price list" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px"
-          onkeydown="if(event.key==='Enter')App.addDealNote('${d.id}')">
-        <button class="btn small" onclick="App.addDealNote('${d.id}')">Add</button>
+      ${d.status==='open' ? (()=>{
+        const st = dealDueState(d);
+        if(!d.nextStep) return `<div class="banner" style="margin-top:0">
+          <b>No next step on this deal.</b> Deals without one go quiet.
+          <a class="lnk" onclick="App.openDealForm('${d.id}')">Set one</a>.</div>`;
+        return `<div class="card" style="box-shadow:none;border:1px solid var(--border);padding:12px 14px;margin-bottom:14px;
+            border-left:4px solid var(--${st.cls==='red'?'red':st.cls==='amber'?'amber':'green'})">
+          <div style="font-family:'Segoe UI',sans-serif;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Next step</div>
+          <div style="font-size:15px;margin:3px 0 6px"><b>${esc(d.nextStep)}</b></div>
+          <span class="pill ${st.cls}">${esc(st.txt)}</span>
+          <button class="btn small ghost" style="margin-left:8px" onclick="App.completeNextStep('${d.id}')">Log it as done</button>
+        </div>`; })() : ''}
+      ${(()=>{
+        const qs = (store.quotes||[]).filter(q=>q.dealId===d.id);
+        if(!qs.length) return '';
+        return `<div class="section-title">Quotes</div>
+          <table><thead><tr><th>Quote</th><th>Total</th><th>Status</th></tr></thead><tbody>
+          ${qs.map(q=>`<tr class="clickable" onclick="App.openQuoteView('${q.id}')">
+            <td><b>${esc(q.number)}</b></td><td>${fmtMoney(quoteTotal(q))}</td><td>${quoteStatusPill(q)}</td></tr>`).join('')}
+          </tbody></table><div style="margin-bottom:18px"></div>`;
+      })()}
+      <div class="section-title">Activity
+        <button class="btn small" style="float:right" onclick="App.openActivityForm(null, {dealId:'${d.id}'})">+ Log activity</button>
       </div>
-      ${(d.notes&&d.notes.length)? d.notes.map(n=>`
-        <div class="note-item"><div>${esc(n.text)}</div><div class="when">${new Date(n.at).toLocaleString()}</div></div>`).join('')
-        : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No notes yet.</div>'}
+      ${activityTimelineHtml(activitiesFor({dealId:d.id}))}
     </div>
   </div>`;
 }
@@ -2168,6 +2699,11 @@ function renderContactProfile(id){
         </tr>`).join('')}</tbody></table>`
       : '<div style="color:var(--muted);font-size:13px;font-family:sans-serif">No deals linked to this contact yet.</div>'}
       <button class="btn small ghost" style="margin-top:14px" onclick="App.openDealForm()">+ New lead</button>
+
+      <div class="section-title" style="margin-top:22px">Activity
+        <button class="btn small" style="float:right" onclick="App.openActivityForm(null, {contactId:'${c.id}', companyId:'${c.companyId||''}'})">+ Log activity</button>
+      </div>
+      ${activityTimelineHtml(activitiesFor({contactId:c.id}), {showDeal:true})}
     </div>
   </div>`;
 }
@@ -2291,6 +2827,11 @@ function renderCompanyProfile(id){
           }).join('')}</tbody></table>`;
       })()}
       <button class="btn small ghost" style="margin-top:14px" onclick="App.openOrderForm(null,'${c.id}')">+ New order for ${esc(c.name)}</button>
+
+      <div class="section-title" style="margin-top:22px">Activity
+        <button class="btn small" style="float:right" onclick="App.openActivityForm(null, {companyId:'${c.id}'})">+ Log activity</button>
+      </div>
+      ${activityTimelineHtml(activitiesFor({companyId:c.id}), {showDeal:true})}
     </div>
   </div>`;
 }
@@ -2463,7 +3004,14 @@ function renderStock(){
         <b>${esc(it.name)}</b> — you would be <b style="color:var(--red)">${short} ${esc(it.unit)} short</b>
         if all open deals close${s.incoming?` (even after ${s.incoming} ${esc(it.unit)} incoming)`:''}.
         Order at least <b>${orderQtyAdvice(it, short)} ${esc(it.unit)}</b> more${it.supplier?` from ${esc(it.supplier)}`:''}${
-          it.leadTimeDays?` — at ${it.leadTimeDays} days' lead time, an order placed today lands about <b>${fdate(addDaysISO(todayISO(), it.leadTimeDays))}</b>`:''}.
+          (()=>{
+            if(it.leadTimeDays==null) return '';
+            const by = orderByDate(it);
+            if(by) return by < todayISO()
+              ? ` — <b style="color:var(--red)">that order is already late</b>: it's needed by ${fdate(neededBy(it))} and takes ${it.leadTimeDays} days, so it should have gone on ${fdate(by)}`
+              : ` — needed by ${fdate(neededBy(it))}, so at ${it.leadTimeDays} days' lead time <b>place that order by ${fdate(by)}</b>`;
+            return ` — at ${it.leadTimeDays} days' lead time, an order placed today lands about <b>${fdate(addDaysISO(todayISO(), it.leadTimeDays))}</b>`;
+          })()}.
         <div style="color:var(--muted);margin-top:3px">Driven by: ${drivers.join(' · ')||'—'}</div>
       </div>`;
     }).join('')}
@@ -2720,6 +3268,220 @@ function refreshRangeSim(){
   $('#pr_blended').innerHTML =
     `Blended margin across ${rows.length} product${rows.length===1?'':'s'}: <b>${pct.toFixed(1)}%</b>`
     + (loss? ` — <span style="color:var(--red);font-weight:600">${loss} line${loss===1?'':'s'} would sell at a loss</span>` : '');
+}
+
+/* ---------------- Reports ----------------
+   Everything here is built from confirmed orders — real money, not pipeline. */
+function renderReports(){
+  const orders = store.orders.slice();
+  if(!orders.length){
+    return `
+    <div class="page-head"><div><h2>Reports</h2>
+      <div class="sub">Where the money actually came from.</div></div></div>
+    <div class="card empty">
+      <div class="big">&#128202;</div>
+      <p><b>No orders yet.</b></p>
+      <p style="margin-top:6px;max-width:520px;margin-left:auto;margin-right:auto">
+        These reports are built from confirmed orders rather than the pipeline, so they show real
+        revenue and margin. Save your first order and they'll fill in.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.go('orders')">Go to Orders</button>
+    </div>`;
+  }
+
+  /* --- by customer --- */
+  const byCo = {};
+  orders.forEach(o=>{
+    const co = companyById(o.companyId); if(!co) return;
+    const m = orderMargin(o);
+    const e = byCo[co.id] || (byCo[co.id] = {name:co.name, id:co.id, rev:0, cost:0, orders:0, last:'', known:true});
+    e.rev += m.rev; e.cost += m.cost; e.orders++; if(!m.known) e.known = false;
+    if((o.orderDate||'') > e.last) e.last = o.orderDate||'';
+  });
+  const customers = Object.values(byCo).sort((a,b)=>b.rev-a.rev);
+
+  /* --- by product --- */
+  const byItem = {};
+  orders.forEach(o=>o.items.forEach(l=>{
+    const it = stockItemById(l.itemId); if(!it) return;
+    const c = landedCost(it);
+    const e = byItem[it.id] || (byItem[it.id] = {name:it.name, unit:it.unit, qty:0, rev:0, cost:0, known:true});
+    e.qty += l.qty; e.rev += l.qty*(l.unitPrice||0);
+    if(c!=null) e.cost += l.qty*c; else e.known = false;
+  }));
+  const products = Object.values(byItem).sort((a,b)=>b.rev-a.rev);
+
+  /* --- by month, last 12 --- */
+  const months = [];
+  const base = new Date(); base.setDate(1);
+  for(let i=11;i>=0;i--){
+    const dt = new Date(base.getFullYear(), base.getMonth()-i, 1);
+    const k = monthKey(dt.toISOString());
+    months.push({key:k, label:monthLabel(k),
+      value: orders.filter(o=>o.orderDate && monthKey(o.orderDate)===k)
+                   .reduce((s,o)=>s+orderTotal(o),0)});
+  }
+
+  /* --- quiet customers: ordered before, nothing recently --- */
+  const QUIET_DAYS = 60;
+  const quiet = customers
+    .filter(c=>c.last && daysSince(c.last) > QUIET_DAYS)
+    .map(c=>({...c, days: daysSince(c.last)}))
+    .sort((a,b)=>b.rev-a.rev);
+
+  const totalRev = customers.reduce((s,c)=>s+c.rev,0);
+  const totalCost = customers.reduce((s,c)=>s+c.cost,0);
+  const allKnown = customers.every(c=>c.known);
+  const blended = marginPct(totalCost, totalRev);
+
+  const bar = (v, max, col) => `<div style="background:#eeebe2;border-radius:5px;height:9px;overflow:hidden">
+    <div style="width:${max?Math.max(1,Math.round(v/max*100)):0}%;height:100%;background:${col}"></div></div>`;
+  const maxCoRev = customers.length ? customers[0].rev : 0;
+  const maxItRev = products.length ? products[0].rev : 0;
+
+  return `
+  <div class="page-head">
+    <div><h2>Reports</h2><div class="sub">Built from confirmed orders — real revenue and margin, not pipeline.</div></div>
+  </div>
+
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Revenue, all orders</div><div class="val">${fmtMoney(totalRev)}</div>
+      <div class="note">${orders.length} order${orders.length===1?'':'s'}</div></div>
+    <div class="card kpi"><div class="lbl">Gross margin</div>
+      <div class="val" style="color:${blended<0?'var(--red)':'var(--green-dark)'}">${totalCost?blended.toFixed(1)+'%':'—'}</div>
+      <div class="note">${totalCost?fmtMoney(totalRev-totalCost)+(allKnown?'':' · some costs missing'):'set cost prices to see this'}</div></div>
+    <div class="card kpi"><div class="lbl">Customers ordering</div><div class="val">${customers.length}</div>
+      <div class="note">avg ${fmtMoney(customers.length?totalRev/customers.length:0)} each</div></div>
+    <div class="card kpi"><div class="lbl">Gone quiet</div>
+      <div class="val" style="color:${quiet.length?'var(--amber)':'inherit'}">${quiet.length}</div>
+      <div class="note">no order in ${QUIET_DAYS}+ days</div></div>
+  </div>
+
+  ${quiet.length? `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--amber)">
+    <div class="section-title" style="color:#8a5313">&#9200; Customers who've gone quiet</div>
+    ${quiet.map(c=>`<div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;margin-bottom:6px">
+      <a class="lnk" onclick="App.go('company','${c.id}')"><b>${esc(c.name)}</b></a> — last ordered ${fdate(c.last)}
+      (<b>${c.days} days</b> ago), worth ${fmtMoney(c.rev)} to you over ${c.orders} order${c.orders===1?'':'s'}.
+    </div>`).join('')}
+  </div>`:''}
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="chart-title">Order value by month</div>
+    ${svgBars(months.map(m=>({label:m.label, value:m.value})), '#1e5c40', true)}
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;align-items:start">
+    <div class="card" style="padding:0">
+      <div class="section-title" style="padding:16px 16px 0">Revenue by customer</div>
+      <table>
+        <thead><tr><th>Customer</th><th>Orders</th><th>Revenue</th><th>Margin</th><th style="width:100px"></th></tr></thead>
+        <tbody>${customers.map(c=>{
+          const pct = marginPct(c.cost, c.rev);
+          return `<tr class="clickable" onclick="App.go('company','${c.id}')">
+            <td><b>${esc(c.name)}</b><div style="font-size:11px;color:var(--muted)">last ${fdate(c.last)}</div></td>
+            <td>${c.orders}</td>
+            <td>${fmtMoney(c.rev)}</td>
+            <td>${c.cost?`<span style="color:${pct<0?'var(--red)':'var(--green-dark)'}">${pct.toFixed(1)}%</span>${c.known?'':'*'}`:'—'}</td>
+            <td>${bar(c.rev, maxCoRev, '#1e5c40')}</td></tr>`;
+        }).join('')}</tbody>
+      </table>
+      ${allKnown?'':'<div style="padding:0 16px 14px;font-size:11.5px;color:var(--muted);font-family:sans-serif">* some products on these orders have no cost price set.</div>'}
+    </div>
+
+    <div class="card" style="padding:0">
+      <div class="section-title" style="padding:16px 16px 0">Revenue by product</div>
+      <table>
+        <thead><tr><th>Product</th><th>Qty sold</th><th>Revenue</th><th>Margin</th><th style="width:100px"></th></tr></thead>
+        <tbody>${products.map(pr=>{
+          const pct = marginPct(pr.cost, pr.rev);
+          return `<tr>
+            <td><b>${esc(pr.name)}</b></td>
+            <td>${pr.qty} ${esc(pr.unit)}</td>
+            <td>${fmtMoney(pr.rev)}</td>
+            <td>${pr.cost?`<span style="color:${pct<0?'var(--red)':'var(--green-dark)'}">${pct.toFixed(1)}%</span>${pr.known?'':'*'}`:'—'}</td>
+            <td>${bar(pr.rev, maxItRev, '#d98324')}</td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Quotes ---------------- */
+function renderQuotes(){
+  const quotes = (store.quotes||[]).slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const open = quotes.filter(q=>!q.orderId && q.status!=='declined');
+  const expiring = open.filter(q=>q.validUntil && q.validUntil >= todayISO() && q.validUntil <= addDaysISO(todayISO(),7));
+  const expired  = open.filter(q=>q.validUntil && q.validUntil < todayISO());
+  const openValue = open.reduce((s,q)=>s+quoteTotal(q),0);
+  const won = quotes.filter(q=>q.orderId);
+  const decided = quotes.filter(q=>q.orderId || q.status==='declined').length;
+  const winRate = decided ? Math.round(won.length/decided*100) : null;
+
+  if(!quotes.length){
+    return `
+    <div class="page-head"><div><h2>Quotes</h2>
+      <div class="sub">Priced proposals with your pack sizes, minimums and lead times on them.</div></div>
+      <button class="btn" onclick="App.openQuoteForm()">+ New quote</button></div>
+    <div class="card empty">
+      <div class="big">&#128196;</div>
+      <p><b>No quotes yet.</b></p>
+      <p style="margin-top:6px;max-width:540px;margin-left:auto;margin-right:auto">
+        A quote sits between a lead and an order. Build one from your SKUs and it prints with pack size,
+        minimum order quantity and lead time already on it — then converts to an order in one click when accepted.</p>
+      <button class="btn" style="margin-top:16px" onclick="App.openQuoteForm()">+ Create your first quote</button>
+    </div>`;
+  }
+
+  return `
+  <div class="page-head">
+    <div><h2>Quotes</h2><div class="sub">Priced proposals. Accepted quotes become orders with their prices intact.</div></div>
+    <button class="btn" onclick="App.openQuoteForm()">+ New quote</button>
+  </div>
+
+  <div class="grid kpis" style="margin-bottom:16px">
+    <div class="card kpi"><div class="lbl">Open quotes</div><div class="val">${open.length}</div>
+      <div class="note">${fmtMoney(openValue)} on the table</div></div>
+    <div class="card kpi"><div class="lbl">Expiring within 7 days</div>
+      <div class="val" style="color:${expiring.length?'var(--amber)':'inherit'}">${expiring.length}</div>
+      <div class="note">${expiring.length?'chase these':'nothing imminent'}</div></div>
+    <div class="card kpi"><div class="lbl">Expired, still open</div>
+      <div class="val" style="color:${expired.length?'var(--red)':'inherit'}">${expired.length}</div>
+      <div class="note">${expired.length?'re-quote or close off':'none'}</div></div>
+    <div class="card kpi"><div class="lbl">Quote win rate</div><div class="val">${winRate===null?'—':winRate+'%'}</div>
+      <div class="note">${won.length} accepted of ${decided} decided</div></div>
+  </div>
+
+  ${expiring.length||expired.length ? `<div class="card" style="margin-bottom:16px;border-left:4px solid var(--${expired.length?'red':'amber'})">
+    <div class="section-title" style="color:var(--${expired.length?'red':'amber'})">&#9200; Needs chasing</div>
+    ${expired.concat(expiring).map(q=>{
+      const co = companyById(q.companyId);
+      const isExp = q.validUntil < todayISO();
+      return `<div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;margin-bottom:7px">
+        <b>${esc(q.number)}</b> to ${esc(co?co.name:'—')} — ${fmtMoney(quoteTotal(q))} —
+        <span style="color:var(--${isExp?'red':'amber'})">${isExp?'expired':'expires'} ${fdate(q.validUntil)}</span>
+        <button class="btn small ghost" style="margin-left:6px" onclick="App.openQuoteView('${q.id}')">Open</button>
+      </div>`;
+    }).join('')}
+  </div>`:''}
+
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Quote</th><th>Company</th><th>Date</th><th>Valid until</th><th>Total</th><th>Margin</th><th>Status</th><th></th></tr></thead>
+      <tbody>${quotes.map(q=>{
+        const co = companyById(q.companyId);
+        const m = orderMargin({items:q.items});
+        return `<tr class="clickable" onclick="App.openQuoteView('${q.id}')">
+          <td><b>${esc(q.number)}</b></td>
+          <td>${esc(co?co.name:'—')}</td>
+          <td>${fdate(q.date)}</td>
+          <td>${q.validUntil?fdate(q.validUntil):'—'}</td>
+          <td>${fmtMoney(quoteTotal(q))}</td>
+          <td>${m.cost?`<span style="color:${m.gp<0?'var(--red)':'var(--green-dark)'}">${m.pct.toFixed(1)}%</span>`:'—'}</td>
+          <td>${quoteStatusPill(q)}</td>
+          <td style="text-align:right"><button class="btn small ghost" onclick="event.stopPropagation();App.openQuoteForm('${q.id}')">Edit</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`;
 }
 
 /* ---------------- Orders ---------------- */
