@@ -16,6 +16,7 @@
     --red:#a93a28; --red-soft:#f6e0dc;
     --blue:#5a7247; --blue-soft:#e9eedf;
     --border:#e4dccb; --shadow:0 2px 10px rgba(42,42,34,.08);
+    --pos:#5a7247;   /* positive figures: margins, surpluses, money in */
     --radius:12px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -216,7 +217,7 @@ const BRAND = {
   icon: 'data:image/png;base64,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',
 };
 
-const BUILD = '2026-08-09.9';   // bump on every deploy — shown in Settings so you can confirm what's live
+const BUILD = '2026-08-09.10';   // bump on every deploy — shown in Settings so you can confirm what's live
 const STAGES = ['New Lead','Contacted','Sample Sent','Negotiation','Closed Won'];
 const STAGE_PROB = {'New Lead':0.10,'Contacted':0.25,'Sample Sent':0.45,'Negotiation':0.70,'Closed Won':1.0};
 const DATA_KEY = 'lfcrm_data', AUTH_KEY = 'lfcrm_auth', REMEMBER_KEY = 'lfcrm_remember', SESSION_KEY = 'lfcrm_session';
@@ -313,6 +314,7 @@ function fmt(n){
   return c + n.toLocaleString(undefined,{maximumFractionDigits:0});
 }
 function fmtSigned(n){ return (n<0?'-':'+') + fmt(Math.abs(n)); }
+function fmtSignedMoney(n){ return (n<0?'-':'+') + fmtMoney(Math.abs(n)); }
 function fdate(iso){ if(!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }
 function monthKey(iso){ const d=new Date(iso); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function monthLabel(key){ const [y,m]=key.split('-'); return new Date(y, m-1, 1).toLocaleDateString(undefined,{month:'short'}); }
@@ -909,7 +911,7 @@ const App = {
     }[view] || renderDashboard;
     $('#main').innerHTML = r();
     if(view==='pipeline') wireDragDrop();
-    if(view==='pricing') refreshPricing();
+    if(view==='pricing'){ if(pricingMode==='deal') refreshScenario(); else refreshPricing(); }
     updateSyncUi(syncing);
   },
 
@@ -1401,7 +1403,7 @@ const App = {
           onclick="App.roundUpQuoteLine(this, ${issue.suggest})">Round up to ${issue.suggest}</button>`);
       const m = lineMargin(it, price, qty);
       if(m && qty){
-        const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+        const col = m.gp < 0 ? 'var(--red)' : 'var(--pos)';
         parts.push(`margin <span style="color:${col};font-weight:600">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>`);
       }
     }
@@ -1418,7 +1420,7 @@ const App = {
     const items = readQuoteLines();
     if(!items.length){ el.innerHTML = ''; return; }
     const m = orderMargin({items});
-    const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+    const col = m.gp < 0 ? 'var(--red)' : 'var(--pos)';
     el.innerHTML = `<b>Quote total ${fmtMoney(m.rev)}</b>`
       + (m.cost ? ` &nbsp;·&nbsp; cost ${fmtMoney(m.cost)} &nbsp;·&nbsp; gross margin
         <span style="color:${col};font-weight:700">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>` : '');
@@ -1709,6 +1711,24 @@ const App = {
 
   /* =============== PRICING (scratchpad — writes only on save) =============== */
   pricingPick(id){ pricingSel = id; this.go('pricing'); },
+  pricingMode(m){ pricingMode = m; this.go('pricing'); },
+  scenarioPick(v){ scenarioSel = v; this.go('pricing'); },
+  scenarioReset(){ this.go('pricing'); },
+  /* The only thing this writes is the deal's value — prices and quotes are untouched */
+  scenarioApplyToDeal(){
+    const sc = scenarioLines(scenarioSel);
+    if(!sc.deal){ toast('Pick an open deal first.', true); return; }
+    const t = scenarioTotals(sc.lines, Number($('#sc_price').value)||0,
+      Number($('#sc_cost').value)||0, Number($('#sc_vol').value)||1);
+    if(!confirm(`Set ${sc.deal.name} to ${fmtMoney(t.rev)}?\n\n`
+      + `It is ${fmtMoney(sc.deal.value)} today. This changes the deal value and therefore your forecast. `
+      + `Product prices and any quote are left as they are.`)) return;
+    sc.deal.value = Math.round(t.rev*100)/100;
+    store.activities.push({id:uid(), createdAt:new Date().toISOString(), at:todayISO(), type:'note',
+      text:'Deal value re-modelled to ' + fmtMoney(t.rev) + ' from the pricing scenario.',
+      dealId:sc.deal.id, companyId:sc.deal.companyId||null, contactId:sc.deal.contactId||null});
+    save(); this.go('pricing'); toast('Deal value updated.');
+  },
   pricingReset(){ this.go('pricing'); },
   applyTargetMargin(){
     const it = stockItemById(pricingSel); if(!it) return;
@@ -1934,7 +1954,7 @@ const App = {
       }
       const m = lineMargin(it, price, qty);
       if(m && qty){
-        const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+        const col = m.gp < 0 ? 'var(--red)' : 'var(--pos)';
         parts.push(`margin <span style="color:${col};font-weight:600">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>`);
       }
     }
@@ -1958,7 +1978,7 @@ const App = {
     });
     if(!items.length){ el.innerHTML = ''; return; }
     const m = orderMargin({items});
-    const col = m.gp < 0 ? 'var(--red)' : 'var(--green-dark)';
+    const col = m.gp < 0 ? 'var(--red)' : 'var(--pos)';
     el.innerHTML = `<b>Order total ${fmtMoney(m.rev)}</b>`
       + (m.cost ? ` &nbsp;·&nbsp; cost ${fmtMoney(m.cost)} &nbsp;·&nbsp; gross margin
           <span style="color:${col};font-weight:700">${fmtMoney(m.gp)} (${m.pct.toFixed(1)}%)</span>` : '')
@@ -2915,14 +2935,14 @@ function renderDashboard(){
       const total = out.reduce((x,i)=>x+invoiceDue(i),0);
       const od = out.filter(i=>i.dueDate && i.dueDate < todayISO()).length;
       return `<div class="card kpi"><div class="lbl">Invoices outstanding</div>
-        <div class="val" style="color:${od?'var(--red)':'var(--green-dark)'}">${fmtMoney(total)}</div>
+        <div class="val" style="color:${od?'var(--red)':'var(--pos)'}">${fmtMoney(total)}</div>
         <div class="note">${out.length} unpaid${od?' · '+od+' overdue':''} — <a class="lnk" onclick="App.go('invoices')">view</a></div></div>`;
     })() : ''}
     ${store.stock.items.length ? (()=>{
       const short = store.stock.items.filter(it=>{const s=stockStats(it);return s.projectedAll<0||s.availableNow<0;}).length;
       return short
         ? `<div class="card kpi" style="border-left:4px solid var(--red)"><div class="lbl">Stock coverage</div><div class="val" style="color:var(--red)">${short} short</div><div class="note"><a class="lnk" onclick="App.go('stock')">See shortfalls</a> if pipeline closes</div></div>`
-        : `<div class="card kpi"><div class="lbl">Stock coverage</div><div class="val" style="color:var(--green-dark)">OK</div><div class="note">pipeline coverable from stock</div></div>`;
+        : `<div class="card kpi"><div class="lbl">Stock coverage</div><div class="val" style="color:var(--pos)">OK</div><div class="note">pipeline coverable from stock</div></div>`;
     })() : ''}
   </div>
 
@@ -3405,7 +3425,7 @@ function renderBanking(){
     <div class="chart-title">Recent transactions</div>
     <table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>
     ${b.transactions.slice(0,25).map(t=>`<tr><td>${fdate(t.date)}</td><td>${esc(t.desc)}</td>
-      <td style="text-align:right;color:${t.amount<0?'var(--red)':'var(--green-dark)'};font-weight:600">${fmtSigned(t.amount)}</td></tr>`).join('')}
+      <td style="text-align:right;color:${t.amount<0?'var(--red)':'var(--pos)'};font-weight:600">${fmtSigned(t.amount)}</td></tr>`).join('')}
     </tbody></table>
     ${b.transactions.length>25?`<div style="color:var(--muted);font-size:12px;margin-top:8px;font-family:sans-serif">Showing latest 25 of ${b.transactions.length}.</div>`:''}
   </div>`:''}
@@ -3470,7 +3490,7 @@ function renderStock(){
       <td style="color:${s.availableNow<0?'var(--red)':'inherit'};font-weight:600">${s.availableNow}</td>
       <td>${s.openDemand||'—'}${s.openDemand?`<div style="font-size:11px;color:var(--muted)">~${Math.round(s.weightedDemand)} weighted</div>`:''}</td>
       <td>${s.incoming?('+'+s.incoming):'—'}</td>
-      <td style="color:${s.projectedAll<0?'var(--red)':'var(--green-dark)'};font-weight:700">${s.projectedAll}</td>
+      <td style="color:${s.projectedAll<0?'var(--red)':'var(--pos)'};font-weight:700">${s.projectedAll}</td>
       <td><span class="pill ${pill.cls}">${pill.txt}</span></td>
       <td style="white-space:nowrap">
         <button class="btn small ghost" onclick="App.openStockForm('${it.id}')">Edit</button>
@@ -3493,7 +3513,7 @@ function renderStock(){
   <div class="grid kpis" style="margin-bottom:16px">
     <div class="card kpi"><div class="lbl">Products tracked</div><div class="val">${items.length}</div></div>
     <div class="card kpi"><div class="lbl">Shortfalls if pipeline closes</div>
-      <div class="val" style="color:${shortfalls.length?'var(--red)':'var(--green-dark)'}">${shortfalls.length}</div>
+      <div class="val" style="color:${shortfalls.length?'var(--red)':'var(--pos)'}">${shortfalls.length}</div>
       <div class="note">${shortfalls.length?'action needed — see below':'all deals coverable'}</div></div>
     <div class="card kpi"><div class="lbl">Pending deliveries</div><div class="val">${pendingAll.length}</div>
       <div class="note">${nextDelivery?('next: '+fdate(nextDelivery.expectedDate)):'none scheduled'}</div></div>
@@ -3558,6 +3578,63 @@ function renderStock(){
 /* ---------------- Pricing simulator ----------------
    A scratchpad. Nothing here changes a saved product unless "Save these prices" is clicked. */
 let pricingSel = null;
+let pricingMode = 'product';     // 'product' = one SKU, 'deal' = a whole deal or customer
+let scenarioSel = null;          // 'deal:<id>' or 'company:<id>'
+
+/* Every product line a scenario covers, with the price each would go out at today.
+   Quantities come from the deal's own stock lines, or the company's estimates if it has none.
+   Prices come from a quote on that deal where one exists, otherwise the product's trade price. */
+function scenarioLines(sel){
+  if(!sel) return {lines:[], label:'', deal:null, company:null, source:''};
+  const [kind, id] = sel.split(':');
+  let deal = null, company = null, raw = [], source = '';
+  if(kind === 'deal'){
+    deal = dealById(id); if(!deal) return {lines:[], label:'', deal:null, company:null, source:''};
+    company = deal.companyId ? companyById(deal.companyId) : null;
+    const el = effectiveLines(deal);
+    raw = el.lines; source = el.estimated ? 'quantities estimated from the company profile' : 'quantities from the deal';
+  } else {
+    company = companyById(id); if(!company) return {lines:[], label:'', deal:null, company:null, source:''};
+    raw = company.stockEstimates || []; source = 'quantities from the company profile';
+  }
+  /* a sent quote is the most honest baseline — it is the price actually on the table */
+  const quote = deal ? (store.quotes||[]).filter(q=>q.dealId===deal.id && !q.orderId)
+                        .sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0] : null;
+  const lines = raw.map(l=>{
+    const it = stockItemById(l.itemId);
+    if(!it) return null;
+    const ql = quote ? (quote.items||[]).find(x=>x.itemId===l.itemId) : null;
+    return {itemId:l.itemId, name:it.name, unit:it.unit, qty:l.qty,
+            price: ql ? ql.unitPrice : (it.tradePrice!=null ? it.tradePrice : 0),
+            cost: landedCost(it), fromQuote: !!ql};
+  }).filter(Boolean);
+  return {lines, deal, company, source,
+    label: deal ? deal.name : (company ? company.name : ''),
+    quote};
+}
+/* Applies the three scenario sliders and returns the money */
+function scenarioTotals(lines, priceAdj, costAdj, volume){
+  let rev=0, cost=0, baseRev=0, baseCost=0, costKnown=true;
+  lines.forEach(l=>{
+    const q = l.qty * volume;
+    rev  += q * l.price * (1 + priceAdj/100);
+    baseRev += l.qty * l.price;
+    if(l.cost==null){ costKnown = false; return; }
+    cost += q * l.cost * (1 + costAdj/100);
+    baseCost += l.qty * l.cost;
+  });
+  return {rev, cost, gp:rev-cost, pct:marginPct(cost, rev), costKnown,
+          baseRev, baseCost, baseGp:baseRev-baseCost, basePct:marginPct(baseCost, baseRev)};
+}
+/* The knock-on effect on the wider forecast: this deal's weighted value moves with its price */
+function forecastImpact(deal, newValue){
+  const openDeals = store.deals.filter(d=>d.status==='open');
+  const current = openDeals.reduce((s,d)=>s + d.value*(STAGE_PROB[d.stage]||0), 0);
+  if(!deal) return {current, modelled:current, delta:0, prob:0, dealDelta:0};
+  const prob = STAGE_PROB[deal.stage]||0;
+  const modelled = current - deal.value*prob + newValue*prob;
+  return {current, modelled, delta:modelled-current, prob, dealDelta:newValue-deal.value};
+}
 
 function renderPricing(){
   const items = store.stock.items;
@@ -3585,8 +3662,16 @@ function renderPricing(){
   return `
   <div class="page-head">
     <div><h2>Pricing &amp; margins</h2>
-    <div class="sub">Drag the sliders to model outcomes. Nothing is saved to the product until you click save.</div></div>
+    <div class="sub">Drag the sliders to model outcomes. Nothing is saved until you click save.</div></div>
+    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden">
+      <button class="btn ${pricingMode==='product'?'':'ghost'}" style="border-radius:0;border:none"
+        onclick="App.pricingMode('product')">One product</button>
+      <button class="btn ${pricingMode==='deal'?'':'ghost'}" style="border-radius:0;border:none"
+        onclick="App.pricingMode('deal')">A deal or customer</button>
+    </div>
   </div>
+  ${pricingMode==='deal' ? renderScenario() : ''}
+  ${pricingMode==='deal' ? '' : `
 
   <div class="banner" style="margin-bottom:16px">
     <b>This is a scratchpad.</b> Moving these sliders does not change ${esc(it.name)} or any order —
@@ -3646,7 +3731,154 @@ function renderPricing(){
     </div>
   </div>
 
+  `}
   ${renderPricingRange()}`;
+}
+
+/* ---- Whole-deal / whole-customer scenario ---- */
+function renderScenario(){
+  const openDeals = store.deals.filter(d=>d.status==='open');
+  const withLines = openDeals.filter(d=>effectiveLines(d).lines.length);
+  const cosWithEst = store.companies.filter(c=>(c.stockEstimates||[]).length);
+  if(!withLines.length && !cosWithEst.length){
+    return `<div class="card">
+      <div class="section-title">Model a whole deal</div>
+      <p class="sans" style="font-size:13.5px;color:var(--muted)">
+        Nothing to model yet. Add products and quantities to a deal — or set a company's estimated requirement
+        on its profile — and you can price the whole thing here and see what it does to your forecast.</p>
+      <button class="btn ghost" style="margin-top:10px" onclick="App.go('pipeline')">Go to the pipeline</button>
+    </div>`;
+  }
+  if(!scenarioSel){
+    scenarioSel = withLines.length ? 'deal:'+withLines[0].id : 'company:'+cosWithEst[0].id;
+  }
+  const sc = scenarioLines(scenarioSel);
+  const opts = [
+    withLines.length ? `<optgroup label="Open deals">${withLines.map(d=>{
+      const co = d.companyId?companyById(d.companyId):null;
+      return `<option value="deal:${d.id}" ${scenarioSel==='deal:'+d.id?'selected':''}>${esc(d.name)}${co?' — '+esc(co.name):''}</option>`;
+    }).join('')}</optgroup>` : '',
+    cosWithEst.length ? `<optgroup label="Customers (estimated requirement)">${cosWithEst.map(c=>
+      `<option value="company:${c.id}" ${scenarioSel==='company:'+c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</optgroup>` : ''
+  ].join('');
+
+  return `
+  <div class="banner" style="margin-bottom:16px">
+    <b>Still a scratchpad.</b> Nothing here changes ${esc(sc.label||'this deal')}, its quote or your products until you save.
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="f2">
+      <div class="frow"><label>Deal or customer</label>
+        <select id="sc_sel" onchange="App.scenarioPick(this.value)">${opts}</select>
+        <div class="hint">${esc(sc.source)}${sc.quote?` · prices from quote ${esc(sc.quote.number)}`:' · prices from each product\'s trade price'}</div>
+      </div>
+      <div class="frow"><label>Contract size</label>
+        <div class="pr-slider" style="margin-bottom:0">
+          <div class="pr-lbl"><span>How many times this quantity</span><b id="sc_volVal"></b></div>
+          <input type="range" id="sc_vol" min="1" max="52" step="1" value="1" oninput="refreshScenario()">
+        </div>
+        <div class="hint">Leave at 1 for a one-off. Move it up to model a repeating contract — 12 for monthly, 52 for weekly.</div>
+      </div>
+    </div>
+
+    <div class="pr-grid">
+      <div>
+        <div class="pr-slider">
+          <div class="pr-lbl"><span>Move every price by</span><b id="sc_priceVal"></b></div>
+          <input type="range" id="sc_price" min="-30" max="30" step="0.5" value="0" oninput="refreshScenario()">
+          <div class="pr-hint">The discount you would give to win it, or the increase you need.</div>
+        </div>
+        <div class="pr-slider">
+          <div class="pr-lbl"><span>Move every cost by</span><b id="sc_costVal"></b></div>
+          <input type="range" id="sc_cost" min="-20" max="50" step="0.5" value="0" oninput="refreshScenario()">
+          <div class="pr-hint">What a supplier increase would do to this deal.</div>
+        </div>
+        <div id="sc_lines" style="margin-top:14px"></div>
+      </div>
+      <div>
+        <div class="pr-figs" id="sc_figs"></div>
+        <div id="sc_impact" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+      <div id="sc_saveNote" style="margin-right:auto;font-family:'Segoe UI',sans-serif;font-size:12.5px;color:var(--muted)"></div>
+      ${sc.deal?`<button class="btn ghost" onclick="App.scenarioReset()">Reset</button>
+        <button class="btn" onclick="App.scenarioApplyToDeal()">Set the deal value to this</button>`:''}
+    </div>
+  </div>`;
+}
+
+function refreshScenario(){
+  if(pricingMode!=='deal' || !$('#sc_price')) return;
+  const sc = scenarioLines(scenarioSel);
+  const priceAdj = Number($('#sc_price').value)||0;
+  const costAdj  = Number($('#sc_cost').value)||0;
+  const volume   = Number($('#sc_vol').value)||1;
+  const t = scenarioTotals(sc.lines, priceAdj, costAdj, volume);
+
+  $('#sc_priceVal').textContent = (priceAdj>0?'+':'') + priceAdj.toFixed(1) + '%';
+  $('#sc_costVal').textContent  = (costAdj>0?'+':'') + costAdj.toFixed(1) + '%';
+  $('#sc_volVal').textContent   = volume === 1 ? 'one-off' : '× ' + volume;
+
+  const col = t.gp < 0 ? 'var(--red)' : 'var(--pos)';
+  const pctShift = t.pct - t.basePct;
+  $('#sc_figs').innerHTML = `
+    <div class="pr-fig"><div class="lbl">Revenue</div><div class="val">${fmtMoney(t.rev)}</div>
+      <div class="note">${volume>1?volume+' × '+fmtMoney(t.baseRev*(1+priceAdj/100)):'at these prices'}</div></div>
+    <div class="pr-fig"><div class="lbl">Gross margin</div>
+      <div class="val" style="color:${col}">${t.costKnown||t.cost?t.pct.toFixed(1)+'%':'—'}</div>
+      <div class="note">${Math.abs(pctShift)>=0.05?`${pctShift>0?'+':''}${pctShift.toFixed(1)} pts vs today`:'unchanged'}</div></div>
+    <div class="pr-fig"><div class="lbl">Margin in money</div>
+      <div class="val" style="color:${col}">${fmtMoney(t.gp)}</div>
+      <div class="note">cost ${fmtMoney(t.cost)}${t.costKnown?'':' · some costs missing'}</div></div>
+    <div class="pr-fig"><div class="lbl">Against today</div>
+      <div class="val" style="color:${t.rev-t.baseRev*volume<0?'var(--red)':'var(--pos)'}">${
+        fmtSignedMoney(t.rev - t.baseRev*volume)}</div>
+      <div class="note">revenue difference</div></div>`;
+
+  /* the line-by-line effect, so a blanket percentage is never a black box */
+  $('#sc_lines').innerHTML = sc.lines.length ? `<table>
+    <thead><tr><th>Product</th><th>Qty</th><th>Price now</th><th>Modelled</th><th>Margin</th></tr></thead>
+    <tbody>${sc.lines.map(l=>{
+      const np = l.price*(1+priceAdj/100);
+      const nc = l.cost==null?null:l.cost*(1+costAdj/100);
+      const pct = nc==null?null:marginPct(nc, np);
+      return `<tr><td>${esc(l.name)}${l.fromQuote?'<div style="font-size:11px;color:var(--muted)">quoted</div>':''}</td>
+        <td>${l.qty*volume} ${esc(l.unit)}</td>
+        <td>${fmtMoney(l.price)}</td>
+        <td><b>${fmtMoney(np)}</b></td>
+        <td>${pct==null?'—':`<span style="color:${pct<0?'var(--red)':'var(--pos)'}">${pct.toFixed(1)}%</span>`}</td></tr>`;
+    }).join('')}</tbody></table>` : '';
+
+  /* wider impact */
+  const el = $('#sc_impact');
+  if(!sc.deal){
+    el.innerHTML = `<div class="pr-fig wide"><div class="lbl">Wider forecast</div>
+      <div class="note" style="font-size:12.5px">This is a customer estimate rather than a live deal, so it does not
+      feed the forecast. Pick an open deal to see the knock-on effect.</div></div>`;
+  } else {
+    const fi = forecastImpact(sc.deal, t.rev);
+    const good = fi.delta >= 0;
+    el.innerHTML = `
+      <div class="chart-title">Effect on your wider forecast</div>
+      <div class="pr-fig wide" style="margin-top:6px">
+        <div style="font-family:'Segoe UI',sans-serif;font-size:13.5px;line-height:1.7">
+          <div>This deal: <b>${fmtMoney(sc.deal.value)}</b> today &rarr;
+            <b style="color:${fi.dealDelta<0?'var(--red)':'var(--pos)'}">${fmtMoney(t.rev)}</b>
+            (${fmtSignedMoney(fi.dealDelta)})</div>
+          <div style="color:var(--muted)">At ${esc(sc.deal.stage)}, ${Math.round(fi.prob*100)}% likely, so
+            ${fmtMoney(t.rev)} × ${Math.round(fi.prob*100)}% counts toward the forecast.</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            Weighted forecast: <b>${fmtMoney(fi.current)}</b> &rarr;
+            <b style="color:${good?'var(--pos)':'var(--red)'}">${fmtMoney(fi.modelled)}</b>
+            <span style="color:${good?'var(--pos)':'var(--red)'}">(${fmtSignedMoney(fi.delta)})</span></div>
+        </div>
+      </div>`;
+  }
+  $('#sc_saveNote').textContent = sc.deal
+    ? 'Saving sets this deal\'s value only. Product prices and any quote are left alone.'
+    : '';
 }
 
 /* Recalculates every live figure on the Pricing tab. Pure read — never writes to the store. */
@@ -3660,7 +3892,7 @@ function refreshPricing(){
   const gpUnit = price - landed;
   const pct    = marginPct(landed, price);
   const markup = landed ? (gpUnit/landed*100) : 0;
-  const col    = gpUnit < 0 ? 'var(--red)' : 'var(--green-dark)';
+  const col    = gpUnit < 0 ? 'var(--red)' : 'var(--pos)';
 
   $('#pr_costVal').textContent  = fmtMoney(cost);
   if($('#pr_otherVal')) $('#pr_otherVal').textContent = fmtMoney(other);
@@ -3672,7 +3904,7 @@ function refreshPricing(){
   $('#pr_priceNote').innerHTML =
     `Break-even at ${fmtMoney(landed)}` +
     (savedPrice ? ` &nbsp;·&nbsp; saved price ${fmtMoney(savedPrice)}${
-      Math.abs(diff) >= 0.005 ? ` (<span style="color:${diff<0?'var(--red)':'var(--green-dark)'}">${diff>0?'+':''}${fmtMoney(diff)}</span>)` : ''}` : '');
+      Math.abs(diff) >= 0.005 ? ` (<span style="color:${diff<0?'var(--red)':'var(--pos)'}">${diff>0?'+':''}${fmtMoney(diff)}</span>)` : ''}` : '');
 
   $('#pr_figs').innerHTML = `
     <div class="pr-fig"><div class="lbl">Margin per ${esc(unitSingular(it.unit))}</div>
@@ -3754,7 +3986,7 @@ function renderPricingRange(){
 function pricingRangeRow(r, uplift){
   const landed = r.landed * (1 + uplift/100);
   const pct = marginPct(landed, r.it.tradePrice);
-  const col = pct < 0 ? 'var(--red)' : (pct < 15 ? 'var(--amber)' : 'var(--green-dark)');
+  const col = pct < 0 ? 'var(--red)' : (pct < 15 ? 'var(--amber)' : 'var(--pos)');
   const w = Math.max(0, Math.min(100, pct));
   return `<tr>
     <td><b>${esc(r.it.name)}</b>${r.it.costIsLanded?'<div style="font-size:11px;color:var(--muted)">landed cost</div>':''}</td>
@@ -3859,7 +4091,7 @@ function renderReports(){
     <div class="card kpi"><div class="lbl">Revenue, all orders</div><div class="val">${fmtMoney(totalRev)}</div>
       <div class="note">${orders.length} order${orders.length===1?'':'s'}</div></div>
     <div class="card kpi"><div class="lbl">Gross margin</div>
-      <div class="val" style="color:${blended<0?'var(--red)':'var(--green-dark)'}">${totalCost?blended.toFixed(1)+'%':'—'}</div>
+      <div class="val" style="color:${blended<0?'var(--red)':'var(--pos)'}">${totalCost?blended.toFixed(1)+'%':'—'}</div>
       <div class="note">${totalCost?fmtMoney(totalRev-totalCost)+(allKnown?'':' · some costs missing'):'set cost prices to see this'}</div></div>
     <div class="card kpi"><div class="lbl">Customers ordering</div><div class="val">${customers.length}</div>
       <div class="note">avg ${fmtMoney(customers.length?totalRev/customers.length:0)} each</div></div>
@@ -3892,7 +4124,7 @@ function renderReports(){
             <td><b>${esc(c.name)}</b><div style="font-size:11px;color:var(--muted)">last ${fdate(c.last)}</div></td>
             <td>${c.orders}</td>
             <td>${fmtMoney(c.rev)}</td>
-            <td>${c.cost?`<span style="color:${pct<0?'var(--red)':'var(--green-dark)'}">${pct.toFixed(1)}%</span>${c.known?'':'*'}`:'—'}</td>
+            <td>${c.cost?`<span style="color:${pct<0?'var(--red)':'var(--pos)'}">${pct.toFixed(1)}%</span>${c.known?'':'*'}`:'—'}</td>
             <td>${bar(c.rev, maxCoRev, '#b0602a')}</td></tr>`;
         }).join('')}</tbody>
       </table>
@@ -3909,7 +4141,7 @@ function renderReports(){
             <td><b>${esc(pr.name)}</b></td>
             <td>${pr.qty} ${esc(pr.unit)}</td>
             <td>${fmtMoney(pr.rev)}</td>
-            <td>${pr.cost?`<span style="color:${pct<0?'var(--red)':'var(--green-dark)'}">${pct.toFixed(1)}%</span>${pr.known?'':'*'}`:'—'}</td>
+            <td>${pr.cost?`<span style="color:${pct<0?'var(--red)':'var(--pos)'}">${pct.toFixed(1)}%</span>${pr.known?'':'*'}`:'—'}</td>
             <td>${bar(pr.rev, maxItRev, '#5a7247')}</td></tr>`;
         }).join('')}</tbody>
       </table>
@@ -3987,7 +4219,7 @@ function renderQuotes(){
           <td>${fdate(q.date)}</td>
           <td>${q.validUntil?fdate(q.validUntil):'—'}</td>
           <td>${fmtMoney(quoteTotal(q))}</td>
-          <td>${m.cost?`<span style="color:${m.gp<0?'var(--red)':'var(--green-dark)'}">${m.pct.toFixed(1)}%</span>`:'—'}</td>
+          <td>${m.cost?`<span style="color:${m.gp<0?'var(--red)':'var(--pos)'}">${m.pct.toFixed(1)}%</span>`:'—'}</td>
           <td>${quoteStatusPill(q)}</td>
           <td style="text-align:right"><button class="btn small ghost" onclick="event.stopPropagation();App.openQuoteForm('${q.id}')">Edit</button></td>
         </tr>`;
@@ -4084,7 +4316,7 @@ function renderInvoices(){
   ${invs.length? `
   <div class="grid kpis" style="margin-bottom:16px">
     <div class="card kpi"><div class="lbl">Outstanding (sent, unpaid)</div><div class="val">${fmtMoney(outstandingTotal)}</div><div class="note">${outstanding.length} invoice${outstanding.length===1?'':'s'}</div></div>
-    <div class="card kpi"><div class="lbl">Overdue</div><div class="val" style="color:${overdue.length?'var(--red)':'var(--green-dark)'}">${fmtMoney(overdueTotal)}</div><div class="note">${overdue.length} past due date</div></div>
+    <div class="card kpi"><div class="lbl">Overdue</div><div class="val" style="color:${overdue.length?'var(--red)':'var(--pos)'}">${fmtMoney(overdueTotal)}</div><div class="note">${overdue.length} past due date</div></div>
     <div class="card kpi"><div class="lbl">Due in next 7 days</div><div class="val">${upcoming.length}</div></div>
     <div class="card kpi"><div class="lbl">Awaiting sending</div><div class="val" style="color:${unsent.length?'var(--amber)':'var(--green-dark)'}">${unsent.length}</div></div>
     <div class="card kpi"><div class="lbl">Paid this month</div><div class="val">${fmtMoney(paidThisMonth)}</div></div>
